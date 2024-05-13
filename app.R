@@ -382,7 +382,7 @@ server <- function(input, output, session) {
     area_result <- corrected_data()
     plot_data <- ggplot(area_result, aes(x = Xcoord, y = InvY, colour = area, alpha = Type)) +
       geom_point(size = 0.5) +
-      scale_color_gradient2(low = "orangered3", midpoint = 500, high = "aquamarine4", limits = color_limits) +
+      scale_color_gradient2(low = "orangered3", midpoint = 500, high = "aquamarine4") +
       scale_alpha_manual(values = c("Stom" = 0, "PC" = 1)) +
       theme(panel.background = element_rect(fill = "black")) +
       theme(panel.grid = element_blank(), legend.position = "left")
