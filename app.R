@@ -373,26 +373,25 @@ server <- function(input, output, session) {
     p
   })
   # last plot
- output$areaplot <- renderPlot({
+  output$areaplot <- renderPlot({
+    circ_result <- circ()
+    
     # Haal de waarde op van de sliderinput
     max_limit <- input$slider_input
-    area_result <- corrected_data()
-    # Maak een aangepaste kleurschaal
-    custom_scale <- scale_color_gradientn(colors = c("orangered3", "orange", "aquamarine4"),
-                                          values = rescale(c(0, 500, max_limit)),
-                                          guide = FALSE)  
     
-    # de plot
+    # Pas de limieten van de kleurschaal aan op basis van de sliderinput
+    color_limits <- c(0, max_limit)
+    
+    # Genereer de plot met ggplot
+    area_result <- corrected_data()
     plot_data <- ggplot(area_result, aes(x = Xcoord, y = InvY, colour = area, alpha = Type)) +
       geom_point(size = 0.5) +
-      custom_scale +
+      scale_color_gradient2(low = "orangered3", midpoint = 500, high = "aquamarine4", limits = color_limits) +
       scale_alpha_manual(values = c("Stom" = 0, "PC" = 1)) +
       theme(panel.background = element_rect(fill = "black")) +
-      theme(panel.grid = element_blank(), legend.position = "left") +
-      labs(color = "Area")   # Aanpassing van de legende titel
+      theme(panel.grid = element_blank(), legend.position = "left")
     print(plot_data)
   })
-  
   ##############################################################################
   ### Download section ###
   ##############################################################################
