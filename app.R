@@ -132,18 +132,51 @@ ui <- dashboardPage(
               )
       ),
       tabItem(tabName = "upload_files",
-              h1("Upload files for cell tracking"),
+              h1("Upload files for cell analysis"),
               sidebarLayout(
                 sidebarPanel(
-                  fileInput("upload", "Upload files", multiple = TRUE),
-                  actionButton("clear_files", "Clear Files")
+                  fileInput("file","Upload the file", multiple = TRUE), 
+                  helpText("Default max. file size is 5MB"),
+                  helpText("Select the read.table parameters below"),
+                  checkboxInput(inputId = 'header', label = 'Header', value = TRUE),
+                  checkboxInput(inputId = "stringAsFactors", "stringAsFactors", FALSE),
+                  radioButtons(inputId = 'sep', label = 'Separator', choices = c(Comma=',',Semicolon=';',Tab='\t', Space=''), selected = ','),
+                  uiOutput("selectfile")
                 ),
                 mainPanel(
-                  DTOutput("file_list")
+                  uiOutput("tb")  
+                ) 
+              )
+      ),
+      tabItem(tabName = "calculation",
+              h1("Calculation of stomatal index and stomatal density"),
+              fluidRow(
+                column(width = 12,
+                       h3("Stomatal Parameters for Each Dataset"),
+                       tableOutput("cell_param_table"),
+                       downloadButton("download_cell_param", "Download Cellular Parameters")
+                )
+              ),
+              fluidRow(
+                column(width = 3,
+                       h4("Number of Cells"),
+                       plotOutput("plot_num_cells")
+                ),
+                column(width = 3,
+                       h4("Number of PC Cells"),
+                       plotOutput("plot_num_pc_cells")
+                ),
+                column(width = 3,
+                       h4("Number of Stomata"),
+                       plotOutput("plot_num_stomata")
+                ),
+                column(width = 3,
+                       h4("Stomatal Index"),
+                       plotOutput("plot_stomatal_index")
                 )
               )
       )
-    )
+     )
   )
 )
 
@@ -526,26 +559,70 @@ server <- function(input, output, session) {
   ####################################################
   ## cell tracking ##
   ####################################################
-  # Reactive value to store uploaded file names
-  uploaded_files <- reactiveVal(character(0))
-  
-  # Update uploaded_files when files are uploaded
-  observeEvent(input$upload, {
-    uploaded_files(c(uploaded_files(), input$upload$name))
+  ## input$file is a data frame and contains the details around the name, size and temp location of the files uploaded
+  observeEvent(input$file, {
+    n <- length(input$file$name)
+    for(i in 1:n) {
+      assign(paste0("values_D", i), reactive({
+        req(input$file)
+        read.table(input$file$datapath[i], sep = input$sep, header = input$header, stringsAsFactors = input$stringAsFactors)
+      }))
+    }
   })
   
-  # Render uploaded file names in DataTable
-  output$file_list <- renderDT({
-    data.frame(File_Name = uploaded_files())
-  }, options = list(dom = "t", ordering = FALSE, lengthMenu = list(c(5, 10, -1), c('5', '10', 'All'))))
+  output$filedf <- renderTable({
+    if(is.null(input$file)){return ()}
+    input$file 
+  })
   
-  # Clear uploaded files
-  observeEvent(input$clear_files, {
-    uploaded_files(character(0))
-    output$upload <- renderUI({
-      fileInput("upload", "Upload files", multiple = TRUE)
+  output$filedf2 <- renderTable({
+    if(is.null(input$file)){return ()}
+    input$file$datapath 
+  })
+  
+  output$fileob <- renderPrint({
+    if(is.null(input$file)){return ()}
+    str(input$file)
+  })
+  
+  output$selectfile <- renderUI({
+    if(is.null(input$file)) {return()}
+    
+    selectInputs <- lapply(seq_along(input$file$name), function(i) {
+      selectInput(
+        paste0("Select", i), 
+        paste("Select file", i), 
+        choices = input$file$name[i]
+      )
     })
+    
+    do.call(tagList, selectInputs)
   })
+  
+  output$summ <- renderPrint({
+    if(is.null(input$file)){return()}
+    summary(eval(parse(text = paste0("values_D", input$selectfile))))  # Use eval(parse()) to access the correct dataset
+  })
+  
+  output$table <- renderTable({ 
+    if(is.null(input$file)){return()}
+    eval(parse(text = paste0("values_D", input$selectfile)))  # Use eval(parse()) to access the correct dataset
+  })
+  
+  output$tb <- renderUI({
+    if(is.null(input$file)) {return()}
+    else
+      tabsetPanel(
+        tabPanel("Input File Object DF ", tableOutput("filedf"), tableOutput("filedf2")),
+        tabPanel("Input File Object Structure", verbatimTextOutput("fileob")),
+        tabPanel("Dataset", tableOutput("table")),
+        tabPanel("Summary Stats", verbatimTextOutput("summ")))
+  })
+###########################################################
+## calculations ##
+###########################################################
+
 }
+
 shinyApp(ui = ui, server = server)
 
