@@ -34,7 +34,8 @@ ui <- dashboardPage(
       menuItem("Compare genotypes", tabName = "compare genotypes", icon = icon("exchange")),
       menuItem("Cell tracking", tabName = "cell tracking", icon = icon("clock"),
               menuSubItem("Upload Files", tabName = "upload_files"),
-              menuSubItem("Calculations", tabName = "calculation")
+              menuSubItem("Calculations", tabName = "calc"),
+              menuSubItem("Plots", tabName = "plot")
       ),
       menuItem("Return to Landing Page", tabName = "landing", icon = icon("arrow-left"), 
                style = "color: #333333; background-color: #FFFFFF; border-color: #DDDDDD;",  # Stijl voor de knop
@@ -135,46 +136,30 @@ ui <- dashboardPage(
               h1("Upload files for cell analysis"),
               sidebarLayout(
                 sidebarPanel(
-                  fileInput("file","Upload the file", multiple = TRUE), 
-                  helpText("Default max. file size is 5MB"),
-                  helpText("Select the read.table parameters below"),
-                  checkboxInput(inputId = 'header', label = 'Header', value = TRUE),
-                  checkboxInput(inputId = "stringAsFactors", "stringAsFactors", FALSE),
-                  radioButtons(inputId = 'sep', label = 'Separator', choices = c(Comma=',',Semicolon=';',Tab='\t', Space=''), selected = ','),
-                  uiOutput("selectfile")
+                  fileInput("values_D1_file", "Upload the D1 file"),
+                  fileInput("values_D2_file", "Upload the D2 file"),
+                  fileInput("values_D3_file", "Upload the D3 file"),
+                  fileInput("values_D4_file", "Upload the D4 file"),
+                  fileInput("values_D5_file", "Upload the D5 file")
                 ),
                 mainPanel(
-                  uiOutput("tb")  
-                ) 
-              )
+                  tabsetPanel(
+                    tabPanel("D1 Data", tableOutput("D1_table")),
+                    tabPanel("D2 Data", tableOutput("D2_table")),
+                    tabPanel("D3 Data", tableOutput("D3_table")),
+                    tabPanel("D4 Data", tableOutput("D4_table")),
+                    tabPanel("D5 Data", tableOutput("D5_table"))
+                  )
+                )
+                )
       ),
-      tabItem(tabName = "calculation",
+      tabItem(tabName = "calc",
               h1("Calculation of stomatal index and stomatal density"),
-              fluidRow(
-                column(width = 12,
-                       h3("Stomatal Parameters for Each Dataset"),
-                       tableOutput("cell_param_table"),
-                       downloadButton("download_cell_param", "Download Cellular Parameters")
+              mainPanel(
+                  dataTableOutput("cell_param_table"),
+                  downloadButton("download_data", "Download Data")
                 )
-              ),
-              fluidRow(
-                column(width = 3,
-                       h4("Number of Cells"),
-                       plotOutput("plot_num_cells")
-                ),
-                column(width = 3,
-                       h4("Number of PC Cells"),
-                       plotOutput("plot_num_pc_cells")
-                ),
-                column(width = 3,
-                       h4("Number of Stomata"),
-                       plotOutput("plot_num_stomata")
-                ),
-                column(width = 3,
-                       h4("Stomatal Index"),
-                       plotOutput("plot_stomatal_index")
-                )
-              )
+              
       )
      )
   )
@@ -560,68 +545,159 @@ server <- function(input, output, session) {
   ## cell tracking ##
   ####################################################
   ## input$file is a data frame and contains the details around the name, size and temp location of the files uploaded
-  observeEvent(input$file, {
-    n <- length(input$file$name)
-    for(i in 1:n) {
-      assign(paste0("values_D", i), reactive({
-        req(input$file)
-        read.table(input$file$datapath[i], sep = input$sep, header = input$header, stringsAsFactors = input$stringAsFactors)
-      }))
+  observe({
+    if (!showModalDialog()) {
+      showModalFunction()
+      showModalDialog(TRUE)
     }
   })
-  
-  output$filedf <- renderTable({
-    if(is.null(input$file)){return ()}
-    input$file 
+  # Observer for the button to return to the landing page
+  observeEvent(input$returnToLanding, {
+    showModalDialog(FALSE)  # Set modal dialog status to FALSE
+    showModalFunction()  # Show modal dialog
   })
   
-  output$filedf2 <- renderTable({
-    if(is.null(input$file)){return ()}
-    input$file$datapath 
+  # Lees waardenbestanden in voor elk submenu-item
+  values_D1 <- reactive({
+    req(input$values_D1_file)
+    read.csv(input$values_D1_file$datapath)
   })
   
-  output$fileob <- renderPrint({
-    if(is.null(input$file)){return ()}
-    str(input$file)
+  values_D2 <- reactive({
+    req(input$values_D2_file)
+    read.csv(input$values_D2_file$datapath)
   })
   
-  output$selectfile <- renderUI({
-    if(is.null(input$file)) {return()}
-    
-    selectInputs <- lapply(seq_along(input$file$name), function(i) {
-      selectInput(
-        paste0("Select", i), 
-        paste("Select file", i), 
-        choices = input$file$name[i]
-      )
-    })
-    
-    do.call(tagList, selectInputs)
+  values_D3 <- reactive({
+    req(input$values_D3_file)
+    read.csv(input$values_D3_file$datapath)
   })
   
-  output$summ <- renderPrint({
-    if(is.null(input$file)){return()}
-    summary(eval(parse(text = paste0("values_D", input$selectfile))))  # Use eval(parse()) to access the correct dataset
+  values_D4 <- reactive({
+    req(input$values_D4_file)
+    read.csv(input$values_D4_file$datapath)
   })
   
-  output$table <- renderTable({ 
-    if(is.null(input$file)){return()}
-    eval(parse(text = paste0("values_D", input$selectfile)))  # Use eval(parse()) to access the correct dataset
+  values_D5 <- reactive({
+    req(input$values_D5_file)
+    read.csv(input$values_D5_file$datapath)
   })
   
-  output$tb <- renderUI({
-    if(is.null(input$file)) {return()}
-    else
-      tabsetPanel(
-        tabPanel("Input File Object DF ", tableOutput("filedf"), tableOutput("filedf2")),
-        tabPanel("Input File Object Structure", verbatimTextOutput("fileob")),
-        tabPanel("Dataset", tableOutput("table")),
-        tabPanel("Summary Stats", verbatimTextOutput("summ")))
+  # Toon waardentabellen voor elk submenu-item
+  output$D1_table <- renderTable({
+    req(values_D1())
+    values_D1()
+  })
+  
+  output$D2_table <- renderTable({
+    req(values_D2())
+    values_D2()
+  })
+  
+  output$D3_table <- renderTable({
+    req(values_D3())
+    values_D3()
+  })
+  
+  output$D4_table <- renderTable({
+    req(values_D4())
+    values_D4()
+  })
+  
+  output$D5_table <- renderTable({
+    req(values_D5())
+    values_D5()
   })
 ###########################################################
 ## calculations ##
 ###########################################################
-
+  # Initialize the calculations list
+  calculations_list <- reactiveVal(list())
+  
+  # Perform calculations when a file is uploaded
+  observeEvent(input$values_D1_file, {
+    if (!is.null(input$values_D1_file)) {
+      values_D1 <- read.csv(input$values_D1_file$datapath)
+      nrPC_D1 <- length(which(values_D1$Type == "PC" & values_D1$area > 25))
+      nrSt_D1 <- length(which(values_D1$Type == "Stom"))
+      SI_D1 <- nrSt_D1 / (nrPC_D1 + nrSt_D1)
+      SD_D1 <- nrSt_D1 / sum(values_D1$area)
+      calculations_list( c(calculations_list(), list(D1 = c(nrPC_D1 + nrSt_D1, nrPC_D1, nrSt_D1, SI_D1, SD_D1))) )
+    }
+  })
+  
+  # Perform calculations for D2 similarly
+  observeEvent(input$values_D2_file, {
+    if (!is.null(input$values_D2_file)) {
+      values_D2 <- read.csv(input$values_D2_file$datapath)
+      nrPC_D2 <- length(which(values_D2$Type == "PC" & values_D2$area > 25))
+      nrSt_D2 <- length(which(values_D2$Type == "Stom"))
+      SI_D2 <- nrSt_D2 / (nrPC_D2 + nrSt_D2)
+      SD_D2 <- nrSt_D2 / sum(values_D2$area)
+      calculations_list( c(calculations_list(), list(D2 = c(nrPC_D2 + nrSt_D2, nrPC_D2, nrSt_D2, SI_D2, SD_D2))) )
+    }
+  })
+  
+  # Perform calculations for D3 similarly
+  observeEvent(input$values_D3_file, {
+    if (!is.null(input$values_D3_file)) {
+      values_D3 <- read.csv(input$values_D3_file$datapath)
+      nrPC_D3 <- length(which(values_D3$Type == "PC" & values_D3$area > 25))
+      nrSt_D3 <- length(which(values_D3$Type == "Stom"))
+      SI_D3 <- nrSt_D3 / (nrPC_D3 + nrSt_D3)
+      SD_D3 <- nrSt_D3 / sum(values_D3$area)
+      calculations_list( c(calculations_list(), list(D3 = c(nrPC_D3 + nrSt_D3, nrPC_D3, nrSt_D3, SI_D3, SD_D3))) )
+    }
+  })
+  
+  # Perform calculations for D4 similarly
+  observeEvent(input$values_D4_file, {
+    if (!is.null(input$values_D4_file)) {
+      values_D4 <- read.csv(input$values_D4_file$datapath)
+      nrPC_D4 <- length(which(values_D4$Type == "PC" & values_D4$area > 25))
+      nrSt_D4 <- length(which(values_D4$Type == "Stom"))
+      SI_D4 <- nrSt_D4 / (nrPC_D4 + nrSt_D4)
+      SD_D4 <- nrSt_D4 / sum(values_D4$area)
+      calculations_list( c(calculations_list(), list(D4 = c(nrPC_D4 + nrSt_D4, nrPC_D4, nrSt_D4, SI_D4, SD_D4))) )
+    }
+  })
+  
+  # Perform calculations for D5 similarly
+  observeEvent(input$values_D5_file, {
+    if (!is.null(input$values_D5_file)) {
+      values_D5 <- read.csv(input$values_D5_file$datapath)
+      nrPC_D5 <- length(which(values_D5$Type == "PC" & values_D5$area > 25))
+      nrSt_D5 <- length(which(values_D5$Type == "Stom"))
+      SI_D5 <- nrSt_D5 / (nrPC_D5 + nrSt_D5)
+      SD_D5 <- nrSt_D5 / sum(values_D5$area)
+      calculations_list( c(calculations_list(), list(D5 = c(nrPC_D5 + nrSt_D5, nrPC_D5, nrSt_D5, SI_D5, SD_D5))) )
+    }
+  })
+  
+  # Combine all calculations into a matrix
+  combined_calculations <- reactive({
+    result <- matrix(NA, nrow = 5, ncol = length(calculations_list()))
+    rownames(result) <- c("Total", "nr_PC", "nr_Stom", "SI", "SD")
+    for (i in seq_along(calculations_list())) {
+      result[, i] <- calculations_list()[[i]]
+    }
+    colnames(result) <- names(calculations_list())
+    result
+  })
+  
+  # Show the matrix in the UI
+  output$cell_param_table <- renderDataTable({
+    combined_calculations()
+  })
+  # Download handler
+  output$download_data <- downloadHandler(
+    filename = function() {
+      paste("cell_param_table.csv", sep = "")
+    },
+    content = function(file) {
+      write.csv(combined_calculations(), file, row.names = TRUE)
+    }
+  )
 }
 
 shinyApp(ui = ui, server = server)
