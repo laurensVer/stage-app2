@@ -7,6 +7,7 @@ library(dplyr)
 library(shinycssloaders)
 library(orca)
 library(scales)
+library(DT)
 
 ui <- dashboardPage(
   dashboardHeader(title = "Cell analyse",
@@ -31,7 +32,10 @@ ui <- dashboardPage(
                menuSubItem("Area Plot", tabName = "area_plot")
       ),
       menuItem("Compare genotypes", tabName = "compare genotypes", icon = icon("exchange")),
-      menuItem("Cell tracking", tabName = "cell tracking", icon = icon("clock")),
+      menuItem("Cell tracking", tabName = "cell tracking", icon = icon("clock"),
+              menuSubItem("Upload Files", tabName = "upload_files"),
+              menuSubItem("Calculations", tabName = "calculation")
+      ),
       menuItem("Return to Landing Page", tabName = "landing", icon = icon("arrow-left"), 
                style = "color: #333333; background-color: #FFFFFF; border-color: #DDDDDD;",  # Stijl voor de knop
                actionButton("returnToLanding", "Return to Landing Page"))  # Knop om terug te gaan naar landingspagina
@@ -125,6 +129,18 @@ ui <- dashboardPage(
                        
                 )
                 
+              )
+      ),
+      tabItem(tabName = "upload_files",
+              h1("Upload files for cell tracking"),
+              sidebarLayout(
+                sidebarPanel(
+                  fileInput("upload", "Upload files", multiple = TRUE),
+                  actionButton("clear_files", "Clear Files")
+                ),
+                mainPanel(
+                  DTOutput("file_list")
+                )
               )
       )
     )
@@ -507,6 +523,29 @@ server <- function(input, output, session) {
       # Sla de plot op als afbeeldingsbestand
       ggsave(file, plot_data)
     })
+  ####################################################
+  ## cell tracking ##
+  ####################################################
+  # Reactive value to store uploaded file names
+  uploaded_files <- reactiveVal(character(0))
+  
+  # Update uploaded_files when files are uploaded
+  observeEvent(input$upload, {
+    uploaded_files(c(uploaded_files(), input$upload$name))
+  })
+  
+  # Render uploaded file names in DataTable
+  output$file_list <- renderDT({
+    data.frame(File_Name = uploaded_files())
+  }, options = list(dom = "t", ordering = FALSE, lengthMenu = list(c(5, 10, -1), c('5', '10', 'All'))))
+  
+  # Clear uploaded files
+  observeEvent(input$clear_files, {
+    uploaded_files(character(0))
+    output$upload <- renderUI({
+      fileInput("upload", "Upload files", multiple = TRUE)
+    })
+  })
 }
 shinyApp(ui = ui, server = server)
 
