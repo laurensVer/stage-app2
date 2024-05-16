@@ -720,6 +720,7 @@ server <- function(input, output, session) {
     # Maak de plot met ggplot
     ggplot(data, aes(x = Days, y = Number_of_cells)) +
       geom_point() +
+      geom_line() +
       labs(x = "Days", y = "Number of cells") +
       ggtitle("Total cells over time") +
       theme(plot.title = element_text(hjust = 0.5))  # Centreren van de titel
@@ -735,6 +736,7 @@ server <- function(input, output, session) {
     # Maak de plot met ggplot
     ggplot(data, aes(x = Days, y = Number_of_PCs)) +
       geom_point() +
+      geom_line() +
       ylim(10, 150) +  # Limieten instellen voor de y-as
       labs(x = "Days", y = "Number of PCs") +
       ggtitle("Number of PCs over time") +
@@ -752,6 +754,7 @@ server <- function(input, output, session) {
     # Maak de plot met ggplot
     ggplot(data, aes(x = Days, y = Number_of_Stom)) +
       geom_point() +
+      geom_line() +
       labs(x = "Days", y = "Number of stomata") +
       ggtitle("Number of stomata over time") +
       theme(plot.title = element_text(hjust = 0.5))  # Centreren van de titel
@@ -768,6 +771,7 @@ server <- function(input, output, session) {
     # Maak de plot met ggplot
     ggplot(data, aes(x = Days, y = Number_of_SI)) +
       geom_point() +
+      geom_line() +
       labs(x = "Days", y = "SI") +
       ggtitle("SI over time") +
       theme(plot.title = element_text(hjust = 0.5))  # Centreren van de titel
