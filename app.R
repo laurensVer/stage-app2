@@ -79,9 +79,16 @@ ui <- dashboardPage(
       ),
       tabItem(tabName = "all_results",
               h1("A overview of the coordinates"),
+              sidebarLayout(
+                sidebarPanel(
+                  textOutput("all_coordinates_text"),
+                  actionButton("upload_button", "Upload bestanden")
+                ),
               mainPanel(
-                withSpinner(tableOutput("all_results"))  # Met spinner
-              )  
+                withSpinner(tableOutput("all_results")),
+                downloadButton("download_coords", "Download Cell Coordinates")
+              )
+              )
       ),
       tabItem(tabName = "graph1",
               h1("Normal plot"),
@@ -224,7 +231,10 @@ server <- function(input, output, session) {
     Cells[, 2:ncol(Cells)] # Pas aan indien nodig
   })
   
-  # Bereken coördinaten van de cellen
+  # Initialiseren van de all_coordinates variabele
+  all_coordinates <- reactiveVal(NULL)
+  
+  # Definieer de reactive voor het berekenen van de cell_coordinates
   cell_coordinates <- reactive({
     req(cells())
     Xcoord <- c()
@@ -249,6 +259,21 @@ server <- function(input, output, session) {
     print(head(All))
     
     All
+  })
+  
+  all_coordinates <- reactiveVal(NULL)  # Initialiseer all_coordinates als een lege lijst
+  
+  observeEvent(input$upload_button, {
+    # Voeg de nieuwe "All" DataFrame toe aan all_coordinates
+    new_data <- cell_coordinates()
+    if (is.null(all_coordinates())) {
+      all_coordinates(list(new_data))
+    } else {
+      all_coordinates(c(all_coordinates(), new_data))
+    }
+    
+    # Print het aantal "All" DataFrames in all_coordinates
+    print(paste("Aantal All dataframes in all_coordinates:", length(all_coordinates())))
   })
   
   # Toon waardentabel
