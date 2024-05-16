@@ -79,16 +79,9 @@ ui <- dashboardPage(
       ),
       tabItem(tabName = "all_results",
               h1("A overview of the coordinates"),
-              sidebarLayout(
-                sidebarPanel(
-                  textOutput("all_coordinates_text"),
-                  actionButton("upload_button", "Upload bestanden")
-                ),
               mainPanel(
-                withSpinner(tableOutput("all_results")),
-                downloadButton("download_coords", "Download Cell Coordinates")
-              )
-              )
+                withSpinner(tableOutput("all_results"))  # Met spinner
+              )  
       ),
       tabItem(tabName = "graph1",
               h1("Normal plot"),
@@ -104,9 +97,7 @@ ui <- dashboardPage(
               fluidRow(
                 column(width = 8,
                        plotlyOutput("stoma_plot", width = "70%", height = "450px"),
-                       downloadButton("stima", "Download Graph 2"),
-                       downloadButton("download_circ_data", "Download circulation data")
-                       
+                       downloadButton("stima", "Download Graph 2")
                 )
               )
       ),
@@ -121,7 +112,8 @@ ui <- dashboardPage(
                 mainPanel(
                   plotlyOutput("corrected_plot", width = "60%", height = "450px"),
                   downloadButton("corrected", "Download here the correction plot"),
-                  downloadButton("download_correction_data","Download here the data of the correction")
+                  downloadButton("download_correction_data","Download here the data of the correction"),
+                  downloadButton("download_correction_circulation_data", "Download here the corrected ciruculation data")
                 )
               )
       ),
@@ -231,10 +223,7 @@ server <- function(input, output, session) {
     Cells[, 2:ncol(Cells)] # Pas aan indien nodig
   })
   
-  # Initialiseren van de all_coordinates variabele
-  all_coordinates <- reactiveVal(NULL)
-  
-  # Definieer de reactive voor het berekenen van de cell_coordinates
+  # Bereken coördinaten van de cellen
   cell_coordinates <- reactive({
     req(cells())
     Xcoord <- c()
@@ -260,22 +249,6 @@ server <- function(input, output, session) {
     
     All
   })
-  
-  all_coordinates <- reactiveVal(NULL)  # Initialiseer all_coordinates als een lege lijst
-  
-  observeEvent(input$upload_button, {
-    # Voeg de nieuwe "All" DataFrame toe aan all_coordinates
-    new_data <- cell_coordinates()
-    if (is.null(all_coordinates())) {
-      all_coordinates(list(new_data))
-    } else {
-      all_coordinates(c(all_coordinates(), new_data))
-    }
-    
-    # Print het aantal "All" DataFrames in all_coordinates
-    print(paste("Aantal All dataframes in all_coordinates:", length(all_coordinates())))
-  })
-  
   # Toon waardentabel
   output$values_table <- renderTable({
     req(values())
@@ -398,9 +371,9 @@ server <- function(input, output, session) {
     }
     # Return de gecorrigeerde data
     corrected_data_df
-    #corrected_data_df2
+    
   })
-  
+  # the corrected data 
   updated_data <- reactive({
     req(input$apply_correction, input$correction_input)  # Controleer of er invoer is
     
@@ -428,7 +401,31 @@ server <- function(input, output, session) {
     corrected_data_df2
     
   })
-  
+  # The corrected circulation data
+  updated_circulation_data <- reactive({
+    req(input$apply_correction, input$correction_input)  # Controleer of er invoer is
+    
+    # Split de invoer op komma's om een lijst te maken van ID:Type paren
+    correction_list <- strsplit(input$correction_input, ",")[[1]]
+    print(correction_list)
+    # Haal de huidige data op
+    circ_data <- circ()
+    # Haal de huidige gecorrigeerde data op
+    current_corrected_data3 <- circ_data$sorted_All
+    # Maak een kopie van de gecorrigeerde data om mee te werken
+    corrected_data_df3 <- current_corrected_data3
+    # Loop door elk paar ID:Type en pas de correctie toe
+    for (pair in correction_list) {
+      id_type <- strsplit(pair, ":")[[1]]
+      id <- as.numeric(id_type[1])
+      type <- id_type[2]
+      corrected_data_df3$Type[corrected_data_df3$ids == id] <- type
+    }
+    
+    # Return de gecorrigeerde data
+    corrected_data_df3
+    
+  })
   
   # Update de plot met de bijgewerkte data
   output$corrected_plot <- renderPlotly({
@@ -466,17 +463,6 @@ server <- function(input, output, session) {
   ##############################################################################
   ### Download section ###
   ##############################################################################
-  # download the circulation with type data
-  output$download_circ_data <- downloadHandler(
-    filename = function() {
-      paste(input$filename_prefix, "_circulation_data", ".csv", sep = "")
-    },
-    content = function(file) {
-      circ_data <- circ()$values_df
-      write.csv(circ_data, file, row.names = FALSE)
-    }
-  )
-  #############################################################################
   # download the corrected graph data
   output$download_correction_data <- downloadHandler(
     filename = function() {
@@ -484,6 +470,17 @@ server <- function(input, output, session) {
     },
     content = function(file) {
       corr_data <- updated_data()  # Ophalen van de gecorrigeerde gegevens
+      write.csv(corr_data, file, row.names = FALSE)  # CSV-bestand schrijven
+    }
+  )
+  #############################################################################
+  # download the corrected circulation data
+  output$download_correction_circulation_data <- downloadHandler(
+    filename = function() {
+      paste0(input$filename_prefix, "_circulation_data.csv")  # Bestandsnaam instellen
+    },
+    content = function(file) {
+      corr_data <- updated_circulation_data()  # Ophalen van de gecorrigeerde gegevens
       write.csv(corr_data, file, row.names = FALSE)  # CSV-bestand schrijven
     }
   )
