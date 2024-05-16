@@ -160,7 +160,19 @@ ui <- dashboardPage(
                   downloadButton("download_data", "Download Data")
                 )
               
+      ),
+      tabItem(tabName = "plot",
+              h1("Combined Plot"),
+              fluidRow(
+                column(6, plotOutput("plot1")),
+                column(6, plotOutput("plot2"))
+              ),
+              fluidRow(
+                column(6, plotOutput("plot3")),
+                column(6, plotOutput("plot4"))
+              )
       )
+      
      )
   )
 )
@@ -698,6 +710,68 @@ server <- function(input, output, session) {
       write.csv(combined_calculations(), file, row.names = TRUE)
     }
   )
+  output$plot1 <- renderPlot({
+    # Definieer de dagen
+    dagen <- seq_along(combined_calculations()[1,]) 
+    # Extraheren van de Total kolom uit de matrix
+    total_cells <- combined_calculations()[1,]
+    # Maak de data frame voor ggplot
+    data <- data.frame(Days = dagen, Number_of_cells = total_cells)
+    # Maak de plot met ggplot
+    ggplot(data, aes(x = Days, y = Number_of_cells)) +
+      geom_point() +
+      labs(x = "Days", y = "Number of cells") +
+      ggtitle("Total cells over time") +
+      theme(plot.title = element_text(hjust = 0.5))  # Centreren van de titel
+  })
+  
+  output$plot2 <- renderPlot({
+    # Definieer de dagen
+    dagen <- seq_along(combined_calculations()[1,]) 
+    # Extraheren van de Total kolom uit de matrix
+    total_cells <- combined_calculations()[2,]
+    # Maak de data frame voor ggplot
+    data <- data.frame(Days = dagen, Number_of_PCs = total_cells)
+    # Maak de plot met ggplot
+    ggplot(data, aes(x = Days, y = Number_of_PCs)) +
+      geom_point() +
+      ylim(10, 150) +  # Limieten instellen voor de y-as
+      labs(x = "Days", y = "Number of PCs") +
+      ggtitle("Number of PCs over time") +
+      theme(plot.title = element_text(hjust = 0.5))  # Centreren van de titel
+  })
+  
+  # Voeg tussenruimte toe tussen de plots
+  output$plot3 <- renderPlot({
+    # Definieer de dagen
+    dagen <- seq_along(combined_calculations()[1,]) 
+    # Extraheren van de Total kolom uit de matrix
+    total_cells <- combined_calculations()[3,]
+    # Maak de data frame voor ggplot
+    data <- data.frame(Days = dagen, Number_of_Stom = total_cells)
+    # Maak de plot met ggplot
+    ggplot(data, aes(x = Days, y = Number_of_Stom)) +
+      geom_point() +
+      labs(x = "Days", y = "Number of stomata") +
+      ggtitle("Number of stomata over time") +
+      theme(plot.title = element_text(hjust = 0.5))  # Centreren van de titel
+  }) 
+  plot.spacing <- unit(1, "lines")
+  
+  output$plot4 <- renderPlot({
+    # Definieer de dagen
+    dagen <- seq_along(combined_calculations()[1,]) 
+    # Extraheren van de Total kolom uit de matrix
+    total_cells <- combined_calculations()[4,]
+    # Maak de data frame voor ggplot
+    data <- data.frame(Days = dagen, Number_of_SI = total_cells)
+    # Maak de plot met ggplot
+    ggplot(data, aes(x = Days, y = Number_of_SI)) +
+      geom_point() +
+      labs(x = "Days", y = "SI") +
+      ggtitle("SI over time") +
+      theme(plot.title = element_text(hjust = 0.5))  # Centreren van de titel
+  })
 }
 
 shinyApp(ui = ui, server = server)
