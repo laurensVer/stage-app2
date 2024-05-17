@@ -175,17 +175,17 @@ ui <- dashboardPage(
       tabItem(tabName = "cell_number",
               h1("plots with the cell number"),
               sidebarPanel(
-                #fileInput("upload_data1", "Upload data 1"),
+                fileInput("upload_data1", "Upload data 1"),
                 fileInput("upload_data2", "Upload data 2"),
+                fileInput("upload_data3", "Upload data 3"),
+                fileInput("upload_data4", "Upload data 4"),
+                fileInput("upload_data5", "Upload data 5"),
                 width = 3
               ),
                 mainPanel(
                 # Plaats voor de plots
                   fluidRow(
-                  # Eerste plot
-                    column(6, plotOutput("plot_numbers1")),
-                  # Tweede plot
-                    column(6, plotOutput("plot_numbers2"))
+                    column(6, plotOutput("plot_numbers1")), column(6, plotOutput("plot_numbers2")), column(6, plotOutput("plot_numbers3")), column(6, plotOutput("plot_numbers4")), column(6, plotOutput("plot_numbers5"))
                 )
               )
               
@@ -818,16 +818,53 @@ server <- function(input, output, session) {
  #############################################################################
   # calculations for cell number plots
   calculate_centroids1 <- reactive({
-    req(updated_circulation_data)
-    circ_data <- updated_circulation_data()  # Gebruik de data van updated_circulation_data
-    centroids <- circ_data %>%
+    req(input$upload_data1)
+    data <- read.csv(input$upload_data1$datapath)
+    centroids <- data %>%
       group_by(ids) %>%
       summarize(CoMX = mean(Xcoord), CoMY = mean(InvY))
-    circ_data <- merge(circ_data, centroids, by = 'ids')
-    circ_data
+    data <- merge(data, centroids, by = 'ids')
+    data
   })
   
-  # Render plot for data 1
+  # Function to calculate centroids for data 2
+  calculate_centroids2 <- reactive({
+    req(input$upload_data2)
+    data <- read.csv(input$upload_data2$datapath)
+    centroids <- data %>%
+      group_by(ids) %>%
+      summarize(CoMX = mean(Xcoord), CoMY = mean(InvY))
+    data <- merge(data, centroids, by = 'ids')
+    data
+  })
+  calculate_centroids3 <- reactive({
+    req(input$upload_data3)
+    data <- read.csv(input$upload_data3$datapath)
+    centroids <- data %>%
+      group_by(ids) %>%
+      summarize(CoMX = mean(Xcoord), CoMY = mean(InvY))
+    data <- merge(data, centroids, by = 'ids')
+    data
+  })
+  calculate_centroids4 <- reactive({
+    req(input$upload_data4)
+    data <- read.csv(input$upload_data4$datapath)
+    centroids <- data %>%
+      group_by(ids) %>%
+      summarize(CoMX = mean(Xcoord), CoMY = mean(InvY))
+    data <- merge(data, centroids, by = 'ids')
+    data
+  })
+  calculate_centroids5 <- reactive({
+    req(input$upload_data5)
+    data <- read.csv(input$upload_data5$datapath)
+    centroids <- data %>%
+      group_by(ids) %>%
+      summarize(CoMX = mean(Xcoord), CoMY = mean(InvY))
+    data <- merge(data, centroids, by = 'ids')
+    data
+  })
+  
   output$plot_numbers1 <- renderPlot({
     data1 <- calculate_centroids1()
     ggplot(data1, aes(x = Xcoord, y = InvY)) +
@@ -838,18 +875,6 @@ server <- function(input, output, session) {
       ggtitle("test - Data 1")
   })
   
-  calculate_centroids2 <- reactive({
-    req(updated_circulation_data)
-    circ_data <- updated_circulation_data()  # Gebruik de data van updated_circulation_data
-    # Implement the logic to calculate centroids for data 2
-    centroids <- circ_data %>%
-      group_by(ids) %>%
-      summarize(CoMX = mean(Xcoord), CoMY = mean(InvY))
-    circ_data <- merge(circ_data, centroids, by = 'ids')
-    circ_data
-  })
-  
-  # Render plot for data 2
   output$plot_numbers2 <- renderPlot({
     data2 <- calculate_centroids2()
     ggplot(data2, aes(x = Xcoord, y = InvY)) +
@@ -858,6 +883,33 @@ server <- function(input, output, session) {
       theme_minimal() +
       theme(legend.position = "none") +
       ggtitle("test - Data 2")
+  })
+  output$plot_numbers3 <- renderPlot({
+    data2 <- calculate_centroids3()
+    ggplot(data3, aes(x = Xcoord, y = InvY)) +
+      geom_point(aes(colour = as.factor(ids))) +
+      geom_text(aes(x = CoMX, y = CoMY, label = ids), colour = "white", size = 2) +
+      theme_minimal() +
+      theme(legend.position = "none") +
+      ggtitle("test - Data 3")
+  })
+  output$plot_numbers4 <- renderPlot({
+    data2 <- calculate_centroids4()
+    ggplot(data4, aes(x = Xcoord, y = InvY)) +
+      geom_point(aes(colour = as.factor(ids))) +
+      geom_text(aes(x = CoMX, y = CoMY, label = ids), colour = "white", size = 2) +
+      theme_minimal() +
+      theme(legend.position = "none") +
+      ggtitle("test - Data 4")
+  })
+  output$plot_numbers5 <- renderPlot({
+    data2 <- calculate_centroids5()
+    ggplot(data5, aes(x = Xcoord, y = InvY)) +
+      geom_point(aes(colour = as.factor(ids))) +
+      geom_text(aes(x = CoMX, y = CoMY, label = ids), colour = "white", size = 2) +
+      theme_minimal() +
+      theme(legend.position = "none") +
+      ggtitle("test - Data 5")
   })
 }
 
