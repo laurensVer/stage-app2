@@ -65,9 +65,9 @@ ui <- dashboardPage(
               h1("Upload here your files and the scale"),
               sidebarLayout(
                 sidebarPanel(
-                  fileInput("values_file", "Upload values bestand (.txt)"),
-                  fileInput("cells_file", "Upload cellen bestand (.txt)"),
-                  textInput("filename_prefix", "Bestandsnaam:"),
+                  fileInput("values_file", "Upload values file (.txt)"),
+                  fileInput("cells_file", "Upload cellen file (.txt)"),
+                  textInput("filename_prefix", "file name:"),
                   br(),
                   uiOutput("values_info"),
                   uiOutput("cells_info")
@@ -107,8 +107,8 @@ ui <- dashboardPage(
               p("Even if no id has to be changed, it is important to overwrite one id, otherwise the area plot will not be plotted."),
               sidebarLayout(
                 sidebarPanel(
-                  textInput("correction_input", "IDs en nieuwe typen (bv. 1:Stom,2:PC):"),
-                  actionButton("apply_correction", "Correctie toepassen")
+                  textInput("correction_input", "IDs and new types (bv. 1:Stom,2:PC):"),
+                  actionButton("apply_correction", "Apply correction ")
                 ),
                 mainPanel(
                   plotlyOutput("corrected_plot", width = "60%", height = "450px"),
@@ -174,18 +174,21 @@ ui <- dashboardPage(
       ),
       tabItem(tabName = "cell_number",
               h1("plots with the cell number"),
-              sidebarLayout(
-                sidebarPanel(
-                  fileInput("upload_data1", "Upload data 1"),
-                  fileInput("upload_data2", "Upload data 2"),
-                  width = 3
-                ),
-                
+              sidebarPanel(
+                #fileInput("upload_data1", "Upload data 1"),
+                fileInput("upload_data2", "Upload data 2"),
+                width = 3
+              ),
                 mainPanel(
-                  plotOutput("plot_numbers1"),
-                  plotOutput("plot_numbers2")
+                # Plaats voor de plots
+                  fluidRow(
+                  # Eerste plot
+                    column(6, plotOutput("plot_numbers1")),
+                  # Tweede plot
+                    column(6, plotOutput("plot_numbers2"))
                 )
               )
+              
       )
       
      )
@@ -296,7 +299,7 @@ server <- function(input, output, session) {
   output$all_results <- renderTable({
     req(cell_coordinates())
     if (is.null(cell_coordinates())) {
-      return("Resultaten worden geladen...")
+      return("Resuls are loading...")
     } else {
       head(cell_coordinates(), 250)  # Toon alleen de eerste 20 rijen
     }
@@ -389,8 +392,8 @@ server <- function(input, output, session) {
     }
     # Return de gecorrigeerde data
     corrected_data_df
-    
   })
+  
   # the corrected data 
   updated_data <- reactive({
     req(input$apply_correction, input$correction_input)  # Controleer of er invoer is
@@ -420,30 +423,25 @@ server <- function(input, output, session) {
     
   })
   # The corrected circulation data
-  
   updated_circulation_data <- reactive({
-    req(input$apply_correction, input$correction_input)  # Controleer of er invoer is
+    req(input$apply_correction, input$correction_input, circ())  # Check if there is input
     
-    # Split de invoer op komma's om een lijst te maken van ID:Type paren
+    # Split the input by commas to create a list of ID:Type pairs
     correction_list <- strsplit(input$correction_input, ",")[[1]]
-    print(correction_list)
-    # Haal de huidige data op
-    circ_data <- circ()
-    # Haal de huidige gecorrigeerde data op
-    current_corrected_data3 <- circ_data$sorted_All
-    # Maak een kopie van de gecorrigeerde data om mee te werken
-    corrected_data_df3 <- current_corrected_data3
-    # Loop door elk paar ID:Type en pas de correctie toe
+    
+    # Make a copy of the corrected data to work with
+    corrected_data_df <- circ()$sorted_All
+    
+    # Loop through each ID:Type pair and apply the correction
     for (pair in correction_list) {
       id_type <- strsplit(pair, ":")[[1]]
       id <- as.numeric(id_type[1])
       type <- id_type[2]
-      corrected_data_df3$Type[corrected_data_df3$ids == id] <- type
+      corrected_data_df$Type[corrected_data_df$ids == id] <- type
     }
     
-    # Return de gecorrigeerde data
-    corrected_data_df3
-    
+    # Return the corrected data
+    corrected_data_df
   })
   
   # Update de plot met de bijgewerkte data
@@ -818,30 +816,18 @@ server <- function(input, output, session) {
       theme(plot.title = element_text(hjust = 0.5))  # Centreren van de titel
   })
  #############################################################################
- # calculations for cell number plots
-  # Function to calculate centroids
-  # Function to calculate centroids for data 1
+  # calculations for cell number plots
   calculate_centroids1 <- reactive({
-    req(input$upload_data1)
-    data <- read.csv(input$upload_data1$datapath)
-    centroids <- data %>%
+    req(updated_circulation_data)
+    circ_data <- updated_circulation_data()  # Gebruik de data van updated_circulation_data
+    centroids <- circ_data %>%
       group_by(ids) %>%
       summarize(CoMX = mean(Xcoord), CoMY = mean(InvY))
-    data <- merge(data, centroids, by = 'ids')
-    data
+    circ_data <- merge(circ_data, centroids, by = 'ids')
+    circ_data
   })
   
-  # Function to calculate centroids for data 2
-  calculate_centroids2 <- reactive({
-    req(input$upload_data2)
-    data <- read.csv(input$upload_data2$datapath)
-    centroids <- data %>%
-      group_by(ids) %>%
-      summarize(CoMX = mean(Xcoord), CoMY = mean(InvY))
-    data <- merge(data, centroids, by = 'ids')
-    data
-  })
-  
+  # Render plot for data 1
   output$plot_numbers1 <- renderPlot({
     data1 <- calculate_centroids1()
     ggplot(data1, aes(x = Xcoord, y = InvY)) +
@@ -849,9 +835,21 @@ server <- function(input, output, session) {
       geom_text(aes(x = CoMX, y = CoMY, label = ids), colour = "white", size = 2) +
       theme_minimal() +
       theme(legend.position = "none") +
-      ggtitle("Controle van de centroiden - Data 1")
+      ggtitle("test - Data 1")
   })
   
+  calculate_centroids2 <- reactive({
+    req(updated_circulation_data)
+    circ_data <- updated_circulation_data()  # Gebruik de data van updated_circulation_data
+    # Implement the logic to calculate centroids for data 2
+    centroids <- circ_data %>%
+      group_by(ids) %>%
+      summarize(CoMX = mean(Xcoord), CoMY = mean(InvY))
+    circ_data <- merge(circ_data, centroids, by = 'ids')
+    circ_data
+  })
+  
+  # Render plot for data 2
   output$plot_numbers2 <- renderPlot({
     data2 <- calculate_centroids2()
     ggplot(data2, aes(x = Xcoord, y = InvY)) +
@@ -859,7 +857,7 @@ server <- function(input, output, session) {
       geom_text(aes(x = CoMX, y = CoMY, label = ids), colour = "white", size = 2) +
       theme_minimal() +
       theme(legend.position = "none") +
-      ggtitle("Controle van de centroiden - Data 2")
+      ggtitle("test - Data 2")
   })
 }
 
