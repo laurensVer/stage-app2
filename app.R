@@ -182,14 +182,12 @@ ui <- dashboardPage(
                 fileInput("upload_data5", "Upload data 5"),
                 width = 3
               ),
-                mainPanel(
-                # Plaats voor de plots
-                  fluidRow(
-                    column(6, plotOutput("plot_numbers1")), column(6, plotOutput("plot_numbers2")), column(6, plotOutput("plot_numbers3")), column(6, plotOutput("plot_numbers4")), column(6, plotOutput("plot_numbers5"))
-                )
+              mainPanel(
+                actionButton("prevBtn", "Previous"),
+                actionButton("nextBtn", "Next"),
+                uiOutput("plotOutput")
               )
-              
-      )
+       )
       
      )
   )
@@ -865,52 +863,59 @@ server <- function(input, output, session) {
     data
   })
   
-  output$plot_numbers1 <- renderPlot({
-    data1 <- calculate_centroids1()
-    ggplot(data1, aes(x = Xcoord, y = InvY)) +
-      geom_point(aes(colour = as.factor(ids))) +
-      geom_text(aes(x = CoMX, y = CoMY, label = ids), colour = "white", size = 2) +
-      theme_minimal() +
-      theme(legend.position = "none") +
-      ggtitle("test - Data 1")
+  plot_functions <- list(
+    function() {
+      data <- calculate_centroids1()
+      ggplot(data, aes(x = Xcoord, y = InvY)) +
+        geom_point(aes(colour = as.factor(ids))) +
+        geom_text(aes(x = CoMX, y = CoMY, label = ids), colour = "white", size = 3) +
+        theme_minimal() +
+        theme(legend.position = "none") +
+        ggtitle("test - Data 1") +
+        labs(x = NULL, y = NULL)  # Verwijder x- en y-as labels
+    },
+    function() {
+      data <- calculate_centroids2()
+      ggplot(data, aes(x = Xcoord, y = InvY)) +
+        geom_point(aes(colour = as.factor(ids))) +
+        geom_text(aes(x = CoMX, y = CoMY, label = ids), colour = "white", size = 3) +
+        theme_minimal() +
+        theme(legend.position = "none") +
+        ggtitle("test - Data 2") +
+        labs(x = NULL, y = NULL)
+    }
+    # Voeg hier de andere plotfuncties toe voor calculate_centroids3, calculate_centroids4, en calculate_centroids5
+  )
+  
+  # Index van de huidige plot
+  current_plot_index <- reactiveVal(1)
+  
+  # Functie om de huidige plot te updaten
+  update_current_plot <- reactive({
+    current_plot_function <- plot_functions[[current_plot_index()]]
+    output$plot <- renderPlot({
+      current_plot_function()
+    })
   })
   
-  output$plot_numbers2 <- renderPlot({
-    data2 <- calculate_centroids2()
-    ggplot(data2, aes(x = Xcoord, y = InvY)) +
-      geom_point(aes(colour = as.factor(ids))) +
-      geom_text(aes(x = CoMX, y = CoMY, label = ids), colour = "white", size = 2) +
-      theme_minimal() +
-      theme(legend.position = "none") +
-      ggtitle("test - Data 2")
+  observeEvent(input$prevBtn, {
+    if (current_plot_index() > 1) {
+      current_plot_index(current_plot_index() - 1)
+    }
   })
-  output$plot_numbers3 <- renderPlot({
-    data2 <- calculate_centroids3()
-    ggplot(data3, aes(x = Xcoord, y = InvY)) +
-      geom_point(aes(colour = as.factor(ids))) +
-      geom_text(aes(x = CoMX, y = CoMY, label = ids), colour = "white", size = 2) +
-      theme_minimal() +
-      theme(legend.position = "none") +
-      ggtitle("test - Data 3")
+  
+  observeEvent(input$nextBtn, {
+    if (current_plot_index() < length(plot_functions)) {
+      current_plot_index(current_plot_index() + 1)
+    }
   })
-  output$plot_numbers4 <- renderPlot({
-    data2 <- calculate_centroids4()
-    ggplot(data4, aes(x = Xcoord, y = InvY)) +
-      geom_point(aes(colour = as.factor(ids))) +
-      geom_text(aes(x = CoMX, y = CoMY, label = ids), colour = "white", size = 2) +
-      theme_minimal() +
-      theme(legend.position = "none") +
-      ggtitle("test - Data 4")
+  
+  output$plotOutput <- renderUI({
+    plotOutput("plot")
   })
-  output$plot_numbers5 <- renderPlot({
-    data2 <- calculate_centroids5()
-    ggplot(data5, aes(x = Xcoord, y = InvY)) +
-      geom_point(aes(colour = as.factor(ids))) +
-      geom_text(aes(x = CoMX, y = CoMY, label = ids), colour = "white", size = 2) +
-      theme_minimal() +
-      theme(legend.position = "none") +
-      ggtitle("test - Data 5")
-  })
+  
+  # Initializeer de eerste plot
+  observe(update_current_plot())
 }
 
 shinyApp(ui = ui, server = server)
