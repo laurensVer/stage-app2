@@ -174,6 +174,7 @@ ui <- dashboardPage(
       ),
       tabItem(tabName = "cell_number",
               h1("plots with the cell number"),
+              p("Upload here the circulation data of the corrected graph"),
               sidebarPanel(
                 fileInput("upload_data1", "Upload data 1"),
                 fileInput("upload_data2", "Upload data 2"),
@@ -883,8 +884,37 @@ server <- function(input, output, session) {
         theme(legend.position = "none") +
         ggtitle("test - Data 2") +
         labs(x = NULL, y = NULL)
+    },
+    function() {
+      data <- calculate_centroids3()
+      ggplot(data, aes(x = Xcoord, y = InvY)) +
+        geom_point(aes(colour = as.factor(ids))) +
+        geom_text(aes(x = CoMX, y = CoMY, label = ids), colour = "white", size = 3) +
+        theme_minimal() +
+        theme(legend.position = "none") +
+        ggtitle("test - Data 3") +
+        labs(x = NULL, y = NULL)
+    },
+    function() {
+      data <- calculate_centroids4()
+      ggplot(data, aes(x = Xcoord, y = InvY)) +
+        geom_point(aes(colour = as.factor(ids))) +
+        geom_text(aes(x = CoMX, y = CoMY, label = ids), colour = "white", size = 3) +
+        theme_minimal() +
+        theme(legend.position = "none") +
+        ggtitle("test - Data 4") +
+        labs(x = NULL, y = NULL)
+    },
+    function() {
+      data <- calculate_centroids5()
+      ggplot(data, aes(x = Xcoord, y = InvY)) +
+        geom_point(aes(colour = as.factor(ids))) +
+        geom_text(aes(x = CoMX, y = CoMY, label = ids), colour = "white", size = 3) +
+        theme_minimal() +
+        theme(legend.position = "none") +
+        ggtitle("test - Data 5") +
+        labs(x = NULL, y = NULL)
     }
-    # Voeg hier de andere plotfuncties toe voor calculate_centroids3, calculate_centroids4, en calculate_centroids5
   )
   
   # Index van de huidige plot
