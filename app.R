@@ -25,9 +25,9 @@ ui <- dashboardPage(
       menuItem("Dashboard", tabName = "dashboard", icon = icon("dashboard")),
       menuItem("Input files", tabName = "input_files", icon = icon("upload")),
       menuItem("Epidermal cell", tabName = "epidermal", icon = icon("microscope"),
-               menuSubItem("ALL", tabName = "all_results"),
-               menuSubItem("Graph 1", tabName = "graph1"),
-               menuSubItem("Graph 2", tabName = "graph2"),
+               menuSubItem("Check dataframe", tabName = "all_results"),
+               menuSubItem("Check cell seperation", tabName = "graph1"),
+               menuSubItem("Cell type graph", tabName = "graph2"),
                menuSubItem("Corrected Data", tabName = "corrected_data"),
                menuSubItem("Area Plot", tabName = "area_plot")
       ),
@@ -62,11 +62,11 @@ ui <- dashboardPage(
               h2("Background information")
       ),
       tabItem(tabName = "input_files",
-              h1("Upload here your files and the scale"),
+              h1("Upload here your files"),
               sidebarLayout(
                 sidebarPanel(
                   fileInput("values_file", "Upload values file (.txt)"),
-                  fileInput("cells_file", "Upload cellen file (.txt)"),
+                  fileInput("cells_file", "Upload position file (.txt)"),
                   textInput("filename_prefix", "file name:"),
                   br(),
                   uiOutput("values_info"),
@@ -85,8 +85,7 @@ ui <- dashboardPage(
               )  
       ),
       tabItem(tabName = "graph1",
-              h1("Normal plot"),
-              fluidRow(
+                fluidRow(
                 column(width = 8,
                        plotOutput("all_plot", width = "70%", height = "450px"),
                        downloadButton("foo", "Download Graph 1")
@@ -94,7 +93,7 @@ ui <- dashboardPage(
               )
       ),
       tabItem(tabName = "graph2",
-              h2("Visualization of the cells and stomata"),
+              h2("Visualization of the pavement cells and stomata"),
               fluidRow(
                 column(width = 8,
                        plotlyOutput("stoma_plot", width = "70%", height = "450px"),
@@ -103,7 +102,7 @@ ui <- dashboardPage(
               )
       ),
       tabItem(tabName = "corrected_data",
-              h1("Chancing cells in a new plot"),
+              h1("Corrected cells in a new plot"),
               p("Even if no id has to be changed, it is important to overwrite one id, otherwise the area plot will not be plotted."),
               sidebarLayout(
                 sidebarPanel(
@@ -126,7 +125,7 @@ ui <- dashboardPage(
                        downloadButton("areaPlot", "Download here the area plot")
                 ),
                 column(width = 6,
-                       sliderInput("slider_input", label = "Maximale limiet", min = 0, max = 50000, value = 5000, step = 1000, width = "80%")
+                       sliderInput("slider_input", label = "Maximum limit", min = 0, max = 50000, value = 5000, step = 1000, width = "80%")
                        
                 )
                 
@@ -208,12 +207,19 @@ server <- function(input, output, session) {
       title = "From leaf image to data",
       tags$style(HTML(".modal-header { background-color: #8ab5e0; } .modal-title { color: white; }")), # Donkerblauwe achtergrondkleur en witte tekst
       h1('From images to segmented cells'),
-      p('Are your epidermal cells not segmented yet? Perform cell segmentation using
-        LeafNet: link ...'),
+      p(HTML('Are your epidermal cells not segmented yet? Perform cell segmentation using
+        LeafNet: <a href="https://leafnet.whu.edu.cn/">link</a>')),
       h1('From segmented cells to measurements'),
-      p('Download here (download button) the LeafXtrack Fiji macro for cellular measurments')
+      p('Download here (download button) the LeafXtrack Fiji macro for cellular measurments'),
+      footer = tagList(
+        actionButton("dismiss", "Next", style = "color: white;", class = "btn-primary")
+      )
     ))
   }
+  # Observer for dismissing the modal dialog
+  observeEvent(input$dismiss, {
+    removeModal()  # Close the modal dialog
+  })
   
   # Show modal dialog when the app starts
   observe({
