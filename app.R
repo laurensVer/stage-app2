@@ -36,7 +36,8 @@ ui <- dashboardPage(
               menuSubItem("Upload Files", tabName = "upload_files"),
               menuSubItem("Calculations", tabName = "calc"),
               menuSubItem("Plots", tabName = "plot"),
-              menuSubItem("Cell_number", tabName = "cell_number")
+              menuSubItem("Cell_number", tabName = "cell_number"),
+              menuSubItem("Rotated plots", tabName = "rotated")
       ),
       menuItem("Return to Landing Page", tabName = "landing", icon = icon("arrow-left"), 
                style = "color: #333333; background-color: #FFFFFF; border-color: #DDDDDD;",  # Stijl voor de knop
@@ -181,20 +182,26 @@ ui <- dashboardPage(
                 fileInput("upload_data4", "Upload data 4"),
                 fileInput("upload_data5", "Upload data 5"),
                 p("Give the systeme 3 extremely-situated cells, so that drawings that are slightly rotated with respect to the first time point can be rectified."),
-                numericInput("top_cell", "Indicate the TOP cell (e.g., '1')", value = NULL),
-                numericInput("right_cell", "Indicate the RIGHT cell (e.g., '2')", value = NULL),
-                numericInput("base_cell", "Indicate the BASE cell (e.g., '3')", value = NULL),
+                numericInput("top_cell", "Top Cell:", value = 1, min = 1),
+                numericInput("right_cell", "Right Cell:", value = 2, min = 1),
+                numericInput("base_cell", "Base Cell:", value = 3, min = 1),
+                actionButton("submit", "Submit"),
+                downloadButton("download_sorted_All_D1", "Dowload sorted data"),
                 width = 3
               ),
               mainPanel(
+                textOutput("highlight_D1"),
                 div(style = "overflow-x: scroll; white-space: nowrap; align: top;",
                     uiOutput("plotOutput")
                 ),
                 width = 9
               )
       
-       )
-      
+       ),
+      tabItem(tabName = "rotated",
+              plotOutput("indicate"),
+              plotOutput("new_plot")
+      )
      )
   )
 )
@@ -685,7 +692,7 @@ server <- function(input, output, session) {
       SI_D1 <- nrSt_D1 / (nrPC_D1 + nrSt_D1)
       SD_D1 <- nrSt_D1 / sum(values_D1$area)
       calculations_list( c(calculations_list(), list(D1 = c(nrPC_D1 + nrSt_D1, nrPC_D1, nrSt_D1, SI_D1, SD_D1))) )
-    }
+      }
   })
   
   # Perform calculations for D2 similarly
@@ -877,24 +884,71 @@ server <- function(input, output, session) {
   output$plots4 <- renderPlot({ plot_functions[[1]](data4()) })
   output$plots5 <- renderPlot({ plot_functions[[1]](data5()) })
   
-  ################################################################################
-  ## 3 cells TOP, RIGHT AND BASE ##
-  # Reactieve waarden voor cellaanduidingen
-  top_cell <- reactive({ input$top_cell })
-  right_cell <- reactive({ input$right_cell })
-  base_cell <- reactive({ input$base_cell })
-  highlight_D1 <- reactive({
-    c(top_cell(), right_cell(), base_cell())
+  ###########################################################
+  ## New Calculations and Plot for Rotated Tab ##
+  ###########################################################
+  All_D1 <- reactive({
+    req(input$upload_data1)
+    read.csv(input$upload_data1$datapath)
   })
-  observe({cat("test:", highlight_D1(), "\n")})
   
-  # Print de cellaanduidingen in de console (voor debuggen)
-  observe({
-    cat("TOP cell:", top_cell(), "\n")
-    cat("RIGHT cell:", right_cell(), "\n")
-    cat("BASE cell:", base_cell(), "\n")
+  observeEvent(input$submit, {
+    req(values_D1(), input$top_cell, input$right_cell, input$base_cell, All_D1())
+    
+    highlight_D1 <- c(input$top_cell, input$right_cell, input$base_cell)
+    values_D1_data <- values_D1()
+    
+    if (all(highlight_D1 %in% seq_len(nrow(values_D1_data)))) {
+      values_D1_data[highlight_D1, 7] <- "Highlight"
+      
+      # Update "Type" column for all rows with specified ID
+      ids_to_highlight <- values_D1_data$cellid %in% highlight_D1
+      values_D1_data$Type[ids_to_highlight] <- "Highlight"
+      
+      All_D1_data <- All_D1()
+      type_list_D1 <- rep(values_D1_data$Type, values_D1_data$areapx)
+      
+      if (length(type_list_D1) == nrow(All_D1_data)) {
+        sorted_All_D1 <- All_D1_data[order(All_D1_data$ids), ]
+        sorted_All_D1$Type <- type_list_D1
+        
+        # Markeer de gemarkeerde cellen als "Highlight"
+        sorted_All_D1$Type[highlight_D1] <- "Highlight"
+        
+        cols <- c("Stom" = "chocolate3", "PC" = "aquamarine4", "Highlight" = "yellow")
+        
+        output$indicate <- renderPlot({
+          ggplot(sorted_All_D1, aes(x = Xcoord, y = InvY, colour = Type)) +
+            geom_point(size = 0.1) +
+            scale_color_manual(values = cols) +
+            theme(panel.background = element_rect(fill = "gray27")) +
+            theme(panel.grid = element_blank(), legend.position = "none")
+        })
+        
+        output$new_plot <- renderPlot({
+          ggplot(sorted_All_D1, aes(x = Xcoord, y = InvY, color = Type)) +
+            geom_point(size = 0.1) +
+            scale_color_manual(values = cols) +
+            theme(panel.background = element_rect(fill = "gray27")) +
+            theme(panel.grid = element_blank(), legend.position = "none") +
+            labs(title = "Highlighted and Sorted Data Plot")
+        })
+        
+        output$download_sorted_All_D1 <- downloadHandler(
+          filename = function() {
+            paste("sorted_All_D1.csv", sep = "")
+          },
+          content = function(file) {
+            write.csv(sorted_All_D1, file, row.names = TRUE)
+          }
+        )
+      } else {
+        showNotification("Mismatch between data length and number of types", type = "error")
+      }
+    } else {
+      showNotification("Highlight indices out of range", type = "error")
+    }
   })
 }
-
 shinyApp(ui = ui, server = server)
 
