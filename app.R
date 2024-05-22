@@ -150,14 +150,14 @@ ui <- dashboardPage(
                     tabPanel("D5 Data", tableOutput("D5_table"))
                   )
                 )
-                )
+               )
       ),
       tabItem(tabName = "calc",
               h1("Calculation of stomatal index and stomatal density"),
               mainPanel(
-                  dataTableOutput("cell_param_table"),
-                  downloadButton("download_data", "Download Data")
-                )
+                dataTableOutput("cell_param_table"),
+                downloadButton("download_data", "Download Data")
+              )
               
       ),
       tabItem(tabName = "plot",
@@ -180,6 +180,10 @@ ui <- dashboardPage(
                 fileInput("upload_data3", "Upload data 3"),
                 fileInput("upload_data4", "Upload data 4"),
                 fileInput("upload_data5", "Upload data 5"),
+                p("Give the systeme 3 extremely-situated cells, so that drawings that are slightly rotated with respect to the first time point can be rectified."),
+                numericInput("top_cell", "Indicate the TOP cell (e.g., '1')", value = NULL),
+                numericInput("right_cell", "Indicate the RIGHT cell (e.g., '2')", value = NULL),
+                numericInput("base_cell", "Indicate the BASE cell (e.g., '3')", value = NULL),
                 width = 3
               ),
               mainPanel(
@@ -666,9 +670,9 @@ server <- function(input, output, session) {
     req(values_D5())
     values_D5()
   })
-###########################################################
-## calculations ##
-###########################################################
+  ###########################################################
+  ## calculations ##
+  ###########################################################
   # Initialize the calculations list
   calculations_list <- reactiveVal(list())
   
@@ -822,9 +826,7 @@ server <- function(input, output, session) {
       ggtitle("SI over time") +
       theme(plot.title = element_text(hjust = 0.5))  # Centreren van de titel
   })
-  output$plotOutput <- renderUI({
-    plotOutput("plot")
-  })
+  
  #############################################################################
   # calculations for cell number plots
   calculate_centroids <- function(data) {
@@ -861,19 +863,37 @@ server <- function(input, output, session) {
   
   output$plotOutput <- renderUI({
     fluidRow(
-      div(style = "display: inline-block; margin-right: 20px;", plotOutput("plot1", width = "500px", height = "500px")),
-      div(style = "display: inline-block; margin-right: 20px;", plotOutput("plot2", width = "500px", height = "500px")),
-      div(style = "display: inline-block; margin-right: 20px;", plotOutput("plot3", width = "500px", height = "500px")),
-      div(style = "display: inline-block; margin-right: 20px;", plotOutput("plot4", width = "500px", height = "500px")),
-      div(style = "display: inline-block; margin-right: 20px;", plotOutput("plot5", width = "500px", height = "500px"))
+      div(style = "display: inline-block; margin-right: 20px;", plotOutput("plots1", width = "500px", height = "500px")),
+      div(style = "display: inline-block; margin-right: 20px;", plotOutput("plots2", width = "500px", height = "500px")),
+      div(style = "display: inline-block; margin-right: 20px;", plotOutput("plots3", width = "500px", height = "500px")),
+      div(style = "display: inline-block; margin-right: 20px;", plotOutput("plots4", width = "500px", height = "500px")),
+      div(style = "display: inline-block; margin-right: 20px;", plotOutput("plots5", width = "500px", height = "500px"))
     )
   })
   
-  output$plot1 <- renderPlot({ plot_functions[[1]](data1()) })
-  output$plot2 <- renderPlot({ plot_functions[[1]](data2()) })
-  output$plot3 <- renderPlot({ plot_functions[[1]](data3()) })
-  output$plot4 <- renderPlot({ plot_functions[[1]](data4()) })
-  output$plot5 <- renderPlot({ plot_functions[[1]](data5()) })
+  output$plots1 <- renderPlot({ plot_functions[[1]](data1()) })
+  output$plots2 <- renderPlot({ plot_functions[[1]](data2()) })
+  output$plots3 <- renderPlot({ plot_functions[[1]](data3()) })
+  output$plots4 <- renderPlot({ plot_functions[[1]](data4()) })
+  output$plots5 <- renderPlot({ plot_functions[[1]](data5()) })
+  
+  ################################################################################
+  ## 3 cells TOP, RIGHT AND BASE ##
+  # Reactieve waarden voor cellaanduidingen
+  top_cell <- reactive({ input$top_cell })
+  right_cell <- reactive({ input$right_cell })
+  base_cell <- reactive({ input$base_cell })
+  highlight_D1 <- reactive({
+    c(top_cell(), right_cell(), base_cell())
+  })
+  observe({cat("test:", highlight_D1(), "\n")})
+  
+  # Print de cellaanduidingen in de console (voor debuggen)
+  observe({
+    cat("TOP cell:", top_cell(), "\n")
+    cat("RIGHT cell:", right_cell(), "\n")
+    cat("BASE cell:", base_cell(), "\n")
+  })
 }
 
 shinyApp(ui = ui, server = server)
