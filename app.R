@@ -183,10 +183,12 @@ ui <- dashboardPage(
                 width = 3
               ),
               mainPanel(
-                actionButton("prevBtn", "Previous"),
-                actionButton("nextBtn", "Next"),
-                uiOutput("plotOutput")
+                div(style = "overflow-x: scroll; white-space: nowrap; align: top;",
+                    uiOutput("plotOutput")
+                ),
+                width = 9
               )
+      
        )
       
      )
@@ -820,138 +822,58 @@ server <- function(input, output, session) {
       ggtitle("SI over time") +
       theme(plot.title = element_text(hjust = 0.5))  # Centreren van de titel
   })
+  output$plotOutput <- renderUI({
+    plotOutput("plot")
+  })
  #############################################################################
   # calculations for cell number plots
-  calculate_centroids1 <- reactive({
-    req(input$upload_data1)
-    data <- read.csv(input$upload_data1$datapath)
+  calculate_centroids <- function(data) {
     centroids <- data %>%
       group_by(ids) %>%
       summarize(CoMX = mean(Xcoord), CoMY = mean(InvY))
     data <- merge(data, centroids, by = 'ids')
     data
-  })
+  }
   
-  # Function to calculate centroids for data 2
-  calculate_centroids2 <- reactive({
-    req(input$upload_data2)
-    data <- read.csv(input$upload_data2$datapath)
-    centroids <- data %>%
-      group_by(ids) %>%
-      summarize(CoMX = mean(Xcoord), CoMY = mean(InvY))
-    data <- merge(data, centroids, by = 'ids')
-    data
-  })
-  calculate_centroids3 <- reactive({
-    req(input$upload_data3)
-    data <- read.csv(input$upload_data3$datapath)
-    centroids <- data %>%
-      group_by(ids) %>%
-      summarize(CoMX = mean(Xcoord), CoMY = mean(InvY))
-    data <- merge(data, centroids, by = 'ids')
-    data
-  })
-  calculate_centroids4 <- reactive({
-    req(input$upload_data4)
-    data <- read.csv(input$upload_data4$datapath)
-    centroids <- data %>%
-      group_by(ids) %>%
-      summarize(CoMX = mean(Xcoord), CoMY = mean(InvY))
-    data <- merge(data, centroids, by = 'ids')
-    data
-  })
-  calculate_centroids5 <- reactive({
-    req(input$upload_data5)
-    data <- read.csv(input$upload_data5$datapath)
-    centroids <- data %>%
-      group_by(ids) %>%
-      summarize(CoMX = mean(Xcoord), CoMY = mean(InvY))
-    data <- merge(data, centroids, by = 'ids')
-    data
-  })
+  load_data <- function(input_file) {
+    req(input_file)
+    read.csv(input_file$datapath)
+  }
   
   plot_functions <- list(
-    function() {
-      data <- calculate_centroids1()
+    function(data) {
+      data <- calculate_centroids(data)
       ggplot(data, aes(x = Xcoord, y = InvY)) +
         geom_point(aes(colour = as.factor(ids))) +
         geom_text(aes(x = CoMX, y = CoMY, label = ids), colour = "white", size = 3) +
         theme_minimal() +
         theme(legend.position = "none") +
-        ggtitle("test - Data 1") +
-        labs(x = NULL, y = NULL)  # Verwijder x- en y-as labels
-    },
-    function() {
-      data <- calculate_centroids2()
-      ggplot(data, aes(x = Xcoord, y = InvY)) +
-        geom_point(aes(colour = as.factor(ids))) +
-        geom_text(aes(x = CoMX, y = CoMY, label = ids), colour = "white", size = 3) +
-        theme_minimal() +
-        theme(legend.position = "none") +
-        ggtitle("test - Data 2") +
-        labs(x = NULL, y = NULL)
-    },
-    function() {
-      data <- calculate_centroids3()
-      ggplot(data, aes(x = Xcoord, y = InvY)) +
-        geom_point(aes(colour = as.factor(ids))) +
-        geom_text(aes(x = CoMX, y = CoMY, label = ids), colour = "white", size = 3) +
-        theme_minimal() +
-        theme(legend.position = "none") +
-        ggtitle("test - Data 3") +
-        labs(x = NULL, y = NULL)
-    },
-    function() {
-      data <- calculate_centroids4()
-      ggplot(data, aes(x = Xcoord, y = InvY)) +
-        geom_point(aes(colour = as.factor(ids))) +
-        geom_text(aes(x = CoMX, y = CoMY, label = ids), colour = "white", size = 3) +
-        theme_minimal() +
-        theme(legend.position = "none") +
-        ggtitle("test - Data 4") +
-        labs(x = NULL, y = NULL)
-    },
-    function() {
-      data <- calculate_centroids5()
-      ggplot(data, aes(x = Xcoord, y = InvY)) +
-        geom_point(aes(colour = as.factor(ids))) +
-        geom_text(aes(x = CoMX, y = CoMY, label = ids), colour = "white", size = 3) +
-        theme_minimal() +
-        theme(legend.position = "none") +
-        ggtitle("test - Data 5") +
         labs(x = NULL, y = NULL)
     }
   )
   
-  # Index van de huidige plot
-  current_plot_index <- reactiveVal(1)
-  
-  # Functie om de huidige plot te updaten
-  update_current_plot <- reactive({
-    current_plot_function <- plot_functions[[current_plot_index()]]
-    output$plot <- renderPlot({
-      current_plot_function()
-    })
-  })
-  
-  observeEvent(input$prevBtn, {
-    if (current_plot_index() > 1) {
-      current_plot_index(current_plot_index() - 1)
-    }
-  })
-  
-  observeEvent(input$nextBtn, {
-    if (current_plot_index() < length(plot_functions)) {
-      current_plot_index(current_plot_index() + 1)
-    }
-  })
+  # Reactive expressions for each dataset
+  data1 <- reactive({ load_data(input$upload_data1) })
+  data2 <- reactive({ load_data(input$upload_data2) })
+  data3 <- reactive({ load_data(input$upload_data3) })
+  data4 <- reactive({ load_data(input$upload_data4) })
+  data5 <- reactive({ load_data(input$upload_data5) })
   
   output$plotOutput <- renderUI({
-    plotOutput("plot")
+    fluidRow(
+      div(style = "display: inline-block; margin-right: 20px;", plotOutput("plot1", width = "500px", height = "500px")),
+      div(style = "display: inline-block; margin-right: 20px;", plotOutput("plot2", width = "500px", height = "500px")),
+      div(style = "display: inline-block; margin-right: 20px;", plotOutput("plot3", width = "500px", height = "500px")),
+      div(style = "display: inline-block; margin-right: 20px;", plotOutput("plot4", width = "500px", height = "500px")),
+      div(style = "display: inline-block; margin-right: 20px;", plotOutput("plot5", width = "500px", height = "500px"))
+    )
   })
   
-  # Initializeer de eerste plot
-  observe(update_current_plot())
+  output$plot1 <- renderPlot({ plot_functions[[1]](data1()) })
+  output$plot2 <- renderPlot({ plot_functions[[1]](data2()) })
+  output$plot3 <- renderPlot({ plot_functions[[1]](data3()) })
+  output$plot4 <- renderPlot({ plot_functions[[1]](data4()) })
+  output$plot5 <- renderPlot({ plot_functions[[1]](data5()) })
 }
 
 shinyApp(ui = ui, server = server)
