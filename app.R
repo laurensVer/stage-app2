@@ -8,6 +8,7 @@ library(shinycssloaders)
 library(orca)
 library(scales)
 library(DT)
+library(grid)
 
 ui <- dashboardPage(
   dashboardHeader(title = "Cell analyse",
@@ -181,26 +182,52 @@ ui <- dashboardPage(
                 fileInput("upload_data3", "Upload data 3"),
                 fileInput("upload_data4", "Upload data 4"),
                 fileInput("upload_data5", "Upload data 5"),
-                p("Give the systeme 3 extremely-situated cells, so that drawings that are slightly rotated with respect to the first time point can be rectified."),
-                numericInput("top_cell", "Top Cell:", value = 1, min = 1),
-                numericInput("right_cell", "Right Cell:", value = 2, min = 1),
-                numericInput("base_cell", "Base Cell:", value = 3, min = 1),
+                p("Give the system 3 extremely-situated cells, so that drawings that are slightly rotated with respect to the first time point can be rectified."),
                 actionButton("submit", "Submit"),
-                downloadButton("download_sorted_All_D1", "Dowload sorted data"),
+                downloadButton("download_sorted_All_D1", "Download sorted data"),
                 width = 3
               ),
               mainPanel(
-                textOutput("highlight_D1"),
-                div(style = "overflow-x: scroll; white-space: nowrap; align: top;",
-                    uiOutput("plotOutput")
+                fluidRow(
+                  column(6, 
+                         plotOutput("plots1"),
+                         uiOutput("plot1_inputs")
+                  ),
+                  column(6, 
+                         plotOutput("plots2"),
+                         uiOutput("plot2_inputs")
+                  )
                 ),
-                width = 9
+                fluidRow(
+                  column(6, 
+                         plotOutput("plots3"),
+                         uiOutput("plot3_inputs")
+                  ),
+                  column(6, 
+                         plotOutput("plots4"),
+                         uiOutput("plot4_inputs")
+                  )
+                ),
+                fluidRow(
+                  column(6, 
+                         plotOutput("plots5"),
+                         uiOutput("plot5_inputs")
+                  )
+                )
               )
-      
-       ),
+      ),
       tabItem(tabName = "rotated",
-              plotOutput("indicate"),
-              plotOutput("new_plot")
+              mainPanel(
+                fluidRow(
+                  column(6, 
+                         plotOutput("D1_plot"),
+                         plotOutput("D2_plot"),
+                         plotOutput("D3_plot"),
+                         plotOutput("D4_plot"),
+                         plotOutput("D5-plot")
+                  )
+                )
+              )
       )
      )
   )
@@ -835,7 +862,7 @@ server <- function(input, output, session) {
   })
   
  #############################################################################
-  # calculations for cell number plots
+  # Function to load data and calculate centroids
   calculate_centroids <- function(data) {
     centroids <- data %>%
       group_by(ids) %>%
@@ -844,22 +871,22 @@ server <- function(input, output, session) {
     data
   }
   
+  # Function to load data
   load_data <- function(input_file) {
     req(input_file)
     read.csv(input_file$datapath)
   }
   
-  plot_functions <- list(
-    function(data) {
-      data <- calculate_centroids(data)
-      ggplot(data, aes(x = Xcoord, y = InvY)) +
-        geom_point(aes(colour = as.factor(ids))) +
-        geom_text(aes(x = CoMX, y = CoMY, label = ids), colour = "white", size = 3) +
-        theme_minimal() +
-        theme(legend.position = "none") +
-        labs(x = NULL, y = NULL)
-    }
-  )
+  # Function to create plot
+  plot_functions <- function(data, top_cell, right_cell, base_cell) {
+    data <- calculate_centroids(data)
+    ggplot(data, aes(x = Xcoord, y = InvY)) +
+      geom_point(aes(colour = as.factor(ids))) +
+      geom_text(aes(x = CoMX, y = CoMY, label = ids), colour = "white", size = 3) +
+      theme_minimal() +
+      theme(legend.position = "none") +
+      labs(x = NULL, y = NULL)
+  }
   
   # Reactive expressions for each dataset
   data1 <- reactive({ load_data(input$upload_data1) })
@@ -868,86 +895,95 @@ server <- function(input, output, session) {
   data4 <- reactive({ load_data(input$upload_data4) })
   data5 <- reactive({ load_data(input$upload_data5) })
   
-  output$plotOutput <- renderUI({
+  # Render UI for cell input fields
+  output$plot1_inputs <- renderUI({
     fluidRow(
-      div(style = "display: inline-block; margin-right: 20px;", plotOutput("plots1", width = "500px", height = "500px")),
-      div(style = "display: inline-block; margin-right: 20px;", plotOutput("plots2", width = "500px", height = "500px")),
-      div(style = "display: inline-block; margin-right: 20px;", plotOutput("plots3", width = "500px", height = "500px")),
-      div(style = "display: inline-block; margin-right: 20px;", plotOutput("plots4", width = "500px", height = "500px")),
-      div(style = "display: inline-block; margin-right: 20px;", plotOutput("plots5", width = "500px", height = "500px"))
+      column(4, numericInput("top_cell1", "Top Cell:", value = 1, min = 1)),
+      column(4, numericInput("right_cell1", "Right Cell:", value = 2, min = 1)),
+      column(4, numericInput("base_cell1", "Base Cell:", value = 3, min = 1))
     )
   })
   
-  output$plots1 <- renderPlot({ plot_functions[[1]](data1()) })
-  output$plots2 <- renderPlot({ plot_functions[[1]](data2()) })
-  output$plots3 <- renderPlot({ plot_functions[[1]](data3()) })
-  output$plots4 <- renderPlot({ plot_functions[[1]](data4()) })
-  output$plots5 <- renderPlot({ plot_functions[[1]](data5()) })
+  output$plot2_inputs <- renderUI({
+    fluidRow(
+      column(4, numericInput("top_cell2", "Top Cell:", value = 1, min = 1)),
+      column(4, numericInput("right_cell2", "Right Cell:", value = 2, min = 1)),
+      column(4, numericInput("base_cell2", "Base Cell:", value = 3, min = 1))
+    )
+  })
+  
+  output$plot3_inputs <- renderUI({
+    fluidRow(
+      column(4, numericInput("top_cell3", "Top Cell:", value = 1, min = 1)),
+      column(4, numericInput("right_cell3", "Right Cell:", value = 2, min = 1)),
+      column(4, numericInput("base_cell3", "Base Cell:", value = 3, min = 1))
+    )
+  })
+  
+  output$plot4_inputs <- renderUI({
+    fluidRow(
+      column(4, numericInput("top_cell4", "Top Cell:", value = 1, min = 1)),
+      column(4, numericInput("right_cell4", "Right Cell:", value = 2, min = 1)),
+      column(4, numericInput("base_cell4", "Base Cell:", value = 3, min = 1))
+    )
+  })
+  
+  output$plot5_inputs <- renderUI({
+    fluidRow(
+      column(4, numericInput("top_cell5", "Top Cell:", value = 1, min = 1)),
+      column(4, numericInput("right_cell5", "Right Cell:", value = 2, min = 1)),
+      column(4, numericInput("base_cell5", "Base Cell:", value = 3, min = 1))
+    )
+  })
+  
+  # Render plots for each dataset
+  output$plots1 <- renderPlot({
+    plot_functions(data1(), input$top_cell1, input$right_cell1, input$base_cell1)
+  })
+  
+  output$plots2 <- renderPlot({
+    plot_functions(data2(), input$top_cell2, input$right_cell2, input$base_cell2)
+  })
+  
+  output$plots3 <- renderPlot({
+    plot_functions(data3(), input$top_cell3, input$right_cell3, input$base_cell3)
+  })
+  
+  output$plots4 <- renderPlot({
+    plot_functions(data4(), input$top_cell4, input$right_cell4, input$base_cell4)
+  })
+  
+  output$plots5 <- renderPlot({
+    plot_functions(data5(), input$top_cell5, input$right_cell5, input$base_cell5)
+  })
   
   ###########################################################
   ## New Calculations and Plot for Rotated Tab ##
   ###########################################################
-  All_D1 <- reactive({
-    req(input$upload_data1)
-    read.csv(input$upload_data1$datapath)
-  })
-  
+  # Observe the submit button to update the rotated tab plots
   observeEvent(input$submit, {
-    req(values_D1(), input$top_cell, input$right_cell, input$base_cell, All_D1())
-    
-    highlight_D1 <- c(input$top_cell, input$right_cell, input$base_cell)
-    values_D1_data <- values_D1()
-    
-    if (all(highlight_D1 %in% seq_len(nrow(values_D1_data)))) {
-      values_D1_data[highlight_D1, 7] <- "Highlight"
+    lapply(1:5, function(i) {
+      dataset <- get(paste0("data", i))()
+      req(dataset)
+      highlight_cells <- c(input[[paste0("top_cell", i)]], input[[paste0("right_cell", i)]], input[[paste0("base_cell", i)]])
       
-      # Update "Type" column for all rows with specified ID
-      ids_to_highlight <- values_D1_data$cellid %in% highlight_D1
-      values_D1_data$Type[ids_to_highlight] <- "Highlight"
-      
-      All_D1_data <- All_D1()
-      type_list_D1 <- rep(values_D1_data$Type, values_D1_data$areapx)
-      
-      if (length(type_list_D1) == nrow(All_D1_data)) {
-        sorted_All_D1 <- All_D1_data[order(All_D1_data$ids), ]
-        sorted_All_D1$Type <- type_list_D1
+      # Ensure highlight_cells are within bounds
+      if (all(highlight_cells %in% dataset$ids)) {
+        # Update "Type" column for all rows with specified IDs
+        dataset$Type <- ifelse(dataset$ids %in% highlight_cells, "Highlight", dataset$Type)
         
-        # Markeer de gemarkeerde cellen als "Highlight"
-        sorted_All_D1$Type[highlight_D1] <- "Highlight"
-        
+        sorted_dataset <- dataset[order(dataset$ids), ]
         cols <- c("Stom" = "chocolate3", "PC" = "aquamarine4", "Highlight" = "yellow")
         
-        output$indicate <- renderPlot({
-          ggplot(sorted_All_D1, aes(x = Xcoord, y = InvY, colour = Type)) +
+        output[[paste0("D", i, "_plot")]] <- renderPlot({
+          ggplot(sorted_dataset, aes(x = Xcoord, y = InvY, colour = Type)) +
             geom_point(size = 0.1) +
             scale_color_manual(values = cols) +
             theme(panel.background = element_rect(fill = "gray27")) +
             theme(panel.grid = element_blank(), legend.position = "none")
         })
-        
-        output$new_plot <- renderPlot({
-          ggplot(sorted_All_D1, aes(x = Xcoord, y = InvY, color = Type)) +
-            geom_point(size = 0.1) +
-            scale_color_manual(values = cols) +
-            theme(panel.background = element_rect(fill = "gray27")) +
-            theme(panel.grid = element_blank(), legend.position = "none") +
-            labs(title = "Highlighted and Sorted Data Plot")
-        })
-        
-        output$download_sorted_All_D1 <- downloadHandler(
-          filename = function() {
-            paste("sorted_All_D1.csv", sep = "")
-          },
-          content = function(file) {
-            write.csv(sorted_All_D1, file, row.names = TRUE)
-          }
-        )
-      } else {
-        showNotification("Mismatch between data length and number of types", type = "error")
       }
-    } else {
-      showNotification("Highlight indices out of range", type = "error")
-    }
+    })
   })
 }
 shinyApp(ui = ui, server = server)
