@@ -861,7 +861,7 @@ server <- function(input, output, session) {
       theme(plot.title = element_text(hjust = 0.5))  # Centreren van de titel
   })
   
- #############################################################################
+  #############################################################################
   # Function to load data and calculate centroids
   calculate_centroids <- function(data) {
     centroids <- data %>%
@@ -886,6 +886,25 @@ server <- function(input, output, session) {
       theme_minimal() +
       theme(legend.position = "none") +
       labs(x = NULL, y = NULL)
+  }
+  
+  # Function to calculate the affine transformation matrix
+  calculate_affine_transformation <- function(src_points, dst_points) {
+    # src_points and dst_points should be matrices with each row as a point (x, y)
+    src_matrix <- cbind(src_points, 1)
+    dst_matrix <- cbind(dst_points, 1)
+    
+    transformation_matrix <- solve(t(src_matrix) %*% src_matrix) %*% t(src_matrix) %*% dst_matrix
+    transformation_matrix
+  }
+  
+  # Function to apply the affine transformation to data
+  apply_affine_transformation <- function(data, transformation_matrix) {
+    coords <- cbind(data$Xcoord, data$InvY, 1)
+    transformed_coords <- coords %*% transformation_matrix
+    data$Xcoord <- transformed_coords[, 1]
+    data$InvY <- transformed_coords[, 2]
+    data
   }
   
   # Reactive expressions for each dataset
@@ -935,32 +954,178 @@ server <- function(input, output, session) {
       column(4, numericInput("base_cell5", "Base Cell:", value = 3, min = 1))
     )
   })
-  
   # Render plots for each dataset
   output$plots1 <- renderPlot({
     plot_functions(data1(), input$top_cell1, input$right_cell1, input$base_cell1)
   })
   
   output$plots2 <- renderPlot({
-    plot_functions(data2(), input$top_cell2, input$right_cell2, input$base_cell2)
+    # Get data for D1 and D2
+    data_d1 <- data1()
+    data_d2 <- data2()
+    
+    # Check if data for D1 and D2 are available
+    if (is.null(data_d1) || is.null(data_d2)) {
+      return(NULL)
+    }
+    
+    # Get IDs for top, right, and base cells for D1 and D2
+    ids_d1 <- c(input$top_cell1, input$right_cell1, input$base_cell1)
+    ids_d2 <- c(input$top_cell2, input$right_cell2, input$base_cell2)
+    
+    # Check if all IDs are available
+    if (any(is.na(ids_d1)) || any(is.na(ids_d2))) {
+      return(NULL)
+    }
+    
+    # Find corresponding coordinates in D1 for the top, right, and base cells in D2
+    coords_d1 <- data_d1[data_d1$ids %in% ids_d1, c("Xcoord", "InvY")]
+    coords_d2 <- data_d2[data_d2$ids %in% ids_d2, c("Xcoord", "InvY")]
+    
+    # Check if all coordinates are available
+    if (any(is.na(coords_d1)) || any(is.na(coords_d2))) {
+      return(NULL)
+    }
+    
+    # Calculate the difference in coordinates between D1 and D2
+    diff_coords <- colMeans(coords_d1) - colMeans(coords_d2)
+    
+    # Adjust the coordinates of D2 using the calculated difference
+    data_d2$Xcoord <- data_d2$Xcoord + diff_coords[1]
+    data_d2$InvY <- data_d2$InvY + diff_coords[2]
+    
+    # Create the plot for D2
+    plot_functions(data_d2, input$top_cell2, input$right_cell2, input$base_cell2) +
+      ggtitle("D2")
   })
   
   output$plots3 <- renderPlot({
-    plot_functions(data3(), input$top_cell3, input$right_cell3, input$base_cell3)
+    # Get data for D1 and D2
+    data_d1 <- data1()
+    data_d3 <- data3()
+    
+    # Check if data for D1 and D2 are available
+    if (is.null(data_d1) || is.null(data_d3)) {
+      return(NULL)
+    }
+    
+    # Get IDs for top, right, and base cells for D1 and D2
+    ids_d1 <- c(input$top_cell1, input$right_cell1, input$base_cell1)
+    ids_d3 <- c(input$top_cell3, input$right_cell3, input$base_cell3)
+    
+    # Check if all IDs are available
+    if (any(is.na(ids_d1)) || any(is.na(ids_d3))) {
+      return(NULL)
+    }
+    
+    # Find corresponding coordinates in D1 for the top, right, and base cells in D2
+    coords_d1 <- data_d1[data_d1$ids %in% ids_d1, c("Xcoord", "InvY")]
+    coords_d3 <- data_d3[data_d3$ids %in% ids_d3, c("Xcoord", "InvY")]
+    
+    # Check if all coordinates are available
+    if (any(is.na(coords_d1)) || any(is.na(coords_d3))) {
+      return(NULL)
+    }
+    
+    # Calculate the difference in coordinates between D1 and D2
+    diff_coords <- colMeans(coords_d1) - colMeans(coords_d3)
+    
+    # Adjust the coordinates of D2 using the calculated difference
+    data_d3$Xcoord <- data_d3$Xcoord + diff_coords[1]
+    data_d3$InvY <- data_d3$InvY + diff_coords[2]
+    
+    # Create the plot for D2
+    plot_functions(data_d3, input$top_cell3, input$right_cell3, input$base_cell3) +
+      ggtitle("D3")
   })
   
   output$plots4 <- renderPlot({
-    plot_functions(data4(), input$top_cell4, input$right_cell4, input$base_cell4)
+    # Get data for D1 and D4
+    data_d1 <- data1()
+    data_d4 <- data4()
+    
+    # Check if data for D1 and D4 are available
+    if (is.null(data_d1) || is.null(data_d4)) {
+      return(NULL)
+    }
+    
+    # Get IDs for top, right, and base cells for D1 and D4
+    ids_d1 <- c(input$top_cell1, input$right_cell1, input$base_cell1)
+    ids_d4 <- c(input$top_cell4, input$right_cell4, input$base_cell4)
+    
+    # Check if all IDs are available
+    if (any(is.na(ids_d1)) || any(is.na(ids_d4))) {
+      return(NULL)
+    }
+    
+    # Find corresponding coordinates in D1 for the top, right, and base cells in D4
+    coords_d1 <- data_d1[data_d1$ids %in% ids_d1, c("Xcoord", "InvY")]
+    coords_d4 <- data_d4[data_d4$ids %in% ids_d4, c("Xcoord", "InvY")]
+    
+    # Check if all coordinates are available
+    if (any(is.na(coords_d1)) || any(is.na(coords_d4))) {
+      return(NULL)
+    }
+    
+    # Calculate the difference in coordinates between D1 and D4
+    diff_coords <- colMeans(coords_d1) - colMeans(coords_d4)
+    
+    # Adjust the coordinates of D4 using the calculated difference
+    data_d4$Xcoord <- data_d4$Xcoord + diff_coords[1]
+    data_d4$InvY <- data_d4$InvY + diff_coords[2]
+    
+    # Create the plot for D4
+    plot_functions(data_d4, input$top_cell4, input$right_cell4, input$base_cell4) +
+      ggtitle("D4")
   })
   
   output$plots5 <- renderPlot({
-    plot_functions(data5(), input$top_cell5, input$right_cell5, input$base_cell5)
+    # Get data for D1 and D5
+    data_d1 <- data1()
+    data_d5 <- data5()
+    
+    # Check if data for D1 and D5 are available
+    if (is.null(data_d1) || is.null(data_d5)) {
+      return(NULL)
+    }
+    
+    # Get IDs for top, right, and base cells for D1 and D5
+    ids_d1 <- c(input$top_cell1, input$right_cell1, input$base_cell1)
+    ids_d5 <- c(input$top_cell5, input$right_cell5, input$base_cell5)
+    
+    # Check if all IDs are available
+    if (any(is.na(ids_d1)) || any(is.na(ids_d5))) {
+      return(NULL)
+    }
+    
+    # Find corresponding coordinates in D1 for the top, right, and base cells in D5
+    coords_d1 <- data_d1[data_d1$ids %in% ids_d1, c("Xcoord", "InvY")]
+    coords_d5 <- data_d5[data_d5$ids %in% ids_d5, c("Xcoord", "InvY")]
+    
+    # Check if all coordinates are available
+    if (any(is.na(coords_d1)) || any(is.na(coords_d5))) {
+      return(NULL)
+    }
+    
+    # Calculate the difference in coordinates between D1 and D5
+    diff_coords <- colMeans(coords_d1) - colMeans(coords_d5)
+    
+    # Adjust the coordinates of D5 using the calculated difference
+    data_d5$Xcoord <- data_d5$Xcoord + diff_coords[1]
+    data_d5$InvY <- data_d5$InvY + diff_coords[2]
+    
+    # Create the plot for D5
+    plot_functions(data_d5, input$top_cell5, input$right_cell5, input$base_cell5) +
+      ggtitle("D5")
   })
+  ##############################################################################
+  ## stomata ##
+  #Stomata_D1<-subset(data_d1()[data_d1()$Type=="Stom",])
+  #Stomata_D2<-subset(data_d2()[data_d2$Type=="Stom",])
   
   ###########################################################
   ## New Calculations and Plot for Rotated Tab ##
   ###########################################################
-  # Observe the submit button to update the rotated tab plots
   observeEvent(input$submit, {
     lapply(1:5, function(i) {
       dataset <- get(paste0("data", i))()
@@ -980,10 +1145,33 @@ server <- function(input, output, session) {
             geom_point(size = 0.1) +
             scale_color_manual(values = cols) +
             theme(panel.background = element_rect(fill = "gray27")) +
-            theme(panel.grid = element_blank(), legend.position = "none")
+            theme(panel.grid = element_blank(), legend.position = "none") +
+            ggtitle("D", i)
         })
       }
     })
+    
+    # Calculate and apply transformation for ALL relative to D1
+    for (i in 2:5) {
+      highlight_cells_d1 <- paste0("data", i - 1)()$ids %in% c(input[[paste0("top_cell", i - 1)]], input[[paste0("right_cell", i - 1)]], input[[paste0("base_cell", i - 1)]])
+      highlight_cells_d2 <- paste0("data", i)()$ids %in% c(input[[paste0("top_cell", i)]], input[[paste0("right_cell", i)]], input[[paste0("base_cell", i)]])
+      
+      if (all(highlight_cells_d1) && all(highlight_cells_d2)) {
+        d1_highlight_cells <- paste0("data", i - 1)()[highlight_cells_d1, c("Xcoord", "InvY")]
+        d2_highlight_cells <- paste0("data", i)()[highlight_cells_d2, c("Xcoord", "InvY")]
+        
+        transformation_matrix <- calculate_affine_transformation(as.matrix(d2_highlight_cells), as.matrix(d1_highlight_cells))
+        data2_transformed <- apply_affine_transformation(paste0("data", i)(), transformation_matrix)
+        
+        output[[paste0("D", i - 1, "_plot")]] <- renderPlot({
+          plot_functions(paste0("data", i - 1)(), input[[paste0("top_cell", i - 1)]], input[[paste0("right_cell", i - 1)]], input[[paste0("base_cell", i - 1)]])
+        })
+        
+        output[[paste0("D", i, "_plot")]] <- renderPlot({
+          plot_functions(data2_transformed, input[[paste0("top_cell", i)]], input[[paste0("right_cell", i)]], input[[paste0("base_cell", i)]])
+        })
+      }
+    }
   })
 }
 shinyApp(ui = ui, server = server)
