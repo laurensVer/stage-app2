@@ -237,15 +237,12 @@ ui <- dashboardPage(
       tabItem(tabName = "test",
               mainPanel(
                 fluidRow(
-                  column(6, 
-                         plotOutput("BAM")),  # Plot 1 in de eerste kolom
-                  column(6, 
-                         plotOutput("BAM2")),
-                  column(6,
-                         plotOutput("BOEM1")),
-                  column(6,
-                         plotOutput("BOEM2"))
-                  
+                  column(4, plotOutput("BAM")),  # Plot 1 in de eerste kolom
+                  column(4, plotOutput("BAM2")),
+                  column(4, plotOutput("BAM3")),
+                  column(4, plotOutput("BOEM1")),
+                  column(4, plotOutput("BOEM2")),
+                  column(4, plotOutput("BOEM3"))
                 )
               )
               
@@ -1026,6 +1023,9 @@ server <- function(input, output, session) {
   highlight_D2 <- reactive({
     c(input$top_cell2, input$right_cell2, input$base_cell2)
   })
+  highlight_D3 <- reactive({
+    c(input$top_cell3, input$right_cell3, input$base_cell3)
+  })
   
   sorted_All_D1 <- reactive({
     req(V_D1(), highlight_D1(), data1_D1())
@@ -1076,6 +1076,9 @@ server <- function(input, output, session) {
     # Sort data and update the Type column
     sorted_All_D2 <- data2_D2()[order(data2_D2()$ids), ]
     sorted_All_D2$Type <- type_list_D2
+    
+    # Ensure 'areapx' column is available for further use
+    sorted_All_D2$areapx_D2 <- rep(Values_D2_temp$areapx, Values_D2_temp$areapx)
     
     sorted_All_D2
   })
@@ -1221,37 +1224,37 @@ server <- function(input, output, session) {
         }
       }
     }
-    ###
-    PrevID_st<-c()
-    j<-1
-    for (i in 1:length(Values_D2$cellid_D2)){
-      if (Values_D2$Type_D2[i]=="PC"|Values_D2$Type_D2[i]=="Highlight"){
-        PrevID_st<-c(PrevID_st,1)
+    
+    PrevID_st <- c()
+    j <- 1
+    for (i in 1:length(Values_D2$cellid_D2)) {
+      if (Values_D2$Type_D2[i] == "PC" | Values_D2$Type_D2[i] == "Highlight") {
+        PrevID_st <- c(PrevID_st, 1)
       }
-      if (Values_D2$Type_D2[i]=="Stom"|Values_D2$Type_D2[i]=="NEW_Stom"){
-        PrevID_st<-c(PrevID_st,Stomata_D2$St_PrevID[j])
-        j<-j+1
+      if (Values_D2$Type_D2[i] == "Stom" | Values_D2$Type_D2[i] == "NEW_Stom") {
+        PrevID_st <- c(PrevID_st, Stomata_D2$St_PrevID[j])
+        j <- j + 1
       }
     }
     
-    Values_D2$PrevID_st<-PrevID_st
-    Old_stomata_D2<-subset(Values_D2[Values_D2$Type_D2=="Stom",])
+    Values_D2$PrevID_st <- PrevID_st
+    Old_stomata_D2 <- subset(Values_D2[Values_D2$Type_D2 == "Stom",])
     
-    PrevID_st<-c()
-    j<-1
-    for (i in 1:length(Values_D2$cellid_D2)){
-      if (Values_D2$Type_D2[i]=="PC"|Values_D2$Type_D2[i]=="Highlight"|Values_D2$Type_D2[i]=="NEW_Stom"){
-        PrevID_st<-c(PrevID_st,1)
+    PrevID_st <- c()
+    j <- 1
+    for (i in 1:length(Values_D2$cellid_D2)) {
+      if (Values_D2$Type_D2[i] == "PC" | Values_D2$Type_D2[i] == "Highlight" | Values_D2$Type_D2[i] == "NEW_Stom") {
+        PrevID_st <- c(PrevID_st, 1)
       }
-      if (Values_D2$Type_D2[i]=="Stom"){
-        PrevID_st<-c(PrevID_st,Old_stomata_D2$PrevID_st[j])
-        j<-j+1
+      if (Values_D2$Type_D2[i] == "Stom") {
+        PrevID_st <- c(PrevID_st, Old_stomata_D2$PrevID_st[j])
+        j <- j + 1
       }
     }
     
-    Values_D2$PrevID_st<-PrevID_st
+    Values_D2$PrevID_st <- PrevID_st
     colnames(Values_D2)
-    OrigID_D2_st<-rep(Values_D2$PrevID_st,areapx_D2)
+    OrigID_D2_st <- rep(Values_D2$PrevID_st, Values_D2$areapx_D2)
     length(OrigID_D2_st)
     
     # Sorting and updating the final data
@@ -1259,8 +1262,7 @@ server <- function(input, output, session) {
     type_list_D2 <- rep(Values_D2$Type_D2, Values_D2$areapx_D2)
     sorted_All_D2$Type_D2 <- type_list_D2
     print(str(Values_D2))
-    list(Values_D1 = Values_D1, Values_D2 = Values_D2)
-    sorted_All_D2$OrigID_st<-OrigID_D2_st
+    sorted_All_D2$OrigID_st <- OrigID_D2_st
     sorted_All_D2
   })
   cols <- c("Stom" = "chocolate3", "PC" = "aquamarine4", "NEW_Stom" = "black", "Highlight" = "white")
@@ -1290,7 +1292,7 @@ server <- function(input, output, session) {
    )
   })
   
-  alphas<-c("Stom"=1, "PC"=0.05, "NEW_Stom"=1, "Highlight"=0)
+  alphas<-c("Stom"=1, "PC"=0.1, "NEW_Stom"=1, "Highlight"=0)
   colss<-c("1" =  "black","2" =  "antiquewhite2","3" =  "aquamarine","4" =  "aquamarine3","5" =  "azure1","6" =  "azure4","7" =  "bisque1","8" =  "bisque4","9" =  "blue","10" =  "blue3","11" =  "brown","12" =  "brown3","13" =  "burlywood1","14" =  "burlywood4","15" =  "cadetblue2","16" =  "chartreuse","17" =  "chartreuse3","18" =  "chocolate1","19" =  "chocolate4","20" =  "coral2","21" =  "cornflowerblue","22" =  "cornsilk2","23" =  "cyan","24" =  "cyan3","25" =  "darkcyan","26" =  "darkgoldenrod2","27" =  "darkgray","28" =  "darkkhaki","29" =  "darkolivegreen1","30" =  "darkolivegreen4","31" =  "darkorange2","32" =  "darkorchid","33" =  "darkorchid3","34" =  "darksalmon","35" =  "darkseagreen2","36" =  "darkslateblue","37" =  "darkslategray2","38" =  "darkslategrey","39" =  "deeppink","40" =  "deeppink3","41" =  "deepskyblue1","42" =  "deepskyblue4","43" =  "dodgerblue","44" =  "dodgerblue3","45" =  "firebrick1","46" =  "firebrick4","47" =  "gainsboro","48" =  "gold1","49" =  "gold4","50" =  "goldenrod2","51" =  "gray","52" =  "gray17","53" =  "gray35","54" =  "gray53","55" =  "gray71","56" =  "gray92","57" =  "green","58" =  "green3","59" =  "honeydew","60" =  "honeydew3","61" =  "hotpink1","62" =  "hotpink4","63" =  "indianred2","64" =  "ivory","65" =  "ivory3","66" =  "khaki1","67" =  "khaki4","68" =  "lavenderblush1","69" =  "lavenderblush4","70" =  "lemonchiffon1","71" =  "lemonchiffon4","72" =  "lightblue2","73" =  "lightcoral","74" =  "lightcyan2","75" =  "lightgoldenrod","76" =  "lightgoldenrod3","77" =  "lightgray","78" =  "lightpink","79" =  "lightpink3","80" =  "lightsalmon1","81" =  "lightsalmon4","82" =  "lightskyblue1","83" =  "lightskyblue4","84" =  "lightslategrey","85" =  "lightsteelblue2","86" =  "lightyellow","87" =  "lightyellow3","88" =  "linen","89" =  "magenta2","90" =  "maroon","91" =  "maroon3","92" =  "mediumblue","93" =  "mediumorchid2","94" =  "mediumpurple","95" =  "mediumpurple3","96" =  "mediumslateblue","97" =  "mediumvioletred","98" =  "mistyrose","99" =  "mistyrose3","100" =  "navajowhite","101" =  "navajowhite3","102" =  "navyblue","103" =  "olivedrab1","104" =  "olivedrab4","105" =  "orange2","106" =  "orangered","107" =  "orangered3","108" =  "orchid1","109" =  "orchid4","110" =  "palegreen1","111" =  "palegreen4","112" =  "paleturquoise2","113" =  "palevioletred","114" =  "palevioletred3","115" =  "peachpuff","116" =  "peachpuff3","117" =  "pink","118" =  "pink3","119" =  "plum1","120" =  "plum4","121" =  "purple1","122" =  "purple4","123" =  "red2","124" =  "rosybrown","125" =  "rosybrown3","126" =  "royalblue1","127" =  "royalblue4","128" =  "salmon1","129" =  "salmon4","130" =  "seagreen1","131" =  "seagreen4","132" =  "seashell2","133" =  "sienna","134" =  "sienna3","135" =  "skyblue1","136" =  "skyblue4","137" =  "slateblue2","138" =  "slategray","139" =  "slategray3","140" =  "snow","141" =  "snow3","142" =  "springgreen1","143" =  "springgreen4","144" =  "steelblue2","145" =  "tan","146" =  "tan3","147" =  "thistle1","148" =  "thistle4","149" =  "tomato2","150" =  "turquoise","151" =  "turquoise3","152" =  "violetred","153" =  "violetred3","154" =  "wheat1","155" =  "wheat4","156" =  "yellow1","157" =  "yellow4","158" =  "aliceblue","159" =  "antiquewhite2","160" =  "aquamarine","161" =  "aquamarine3","162" =  "azure1","163" =  "azure4","164" =  "bisque1","165" =  "bisque4","166" =  "blue","167" =  "blue3","168" =  "brown","169" =  "brown3","170" =  "burlywood1","171" =  "burlywood4","172" =  "cadetblue2","173" =  "chartreuse","174" =  "chartreuse3","175" =  "chocolate1","176" =  "chocolate4","177" =  "coral2","178" =  "cornflowerblue","179" =  "cornsilk2","180" =  "cyan","181" =  "cyan3","182" =  "darkcyan","183" =  "darkgoldenrod2","184" =  "darkgray","185" =  "darkkhaki","186" =  "darkolivegreen1","187" =  "darkolivegreen4","188" =  "darkorange2","189" =  "darkorchid","190" =  "darkorchid3","191" =  "darksalmon","192" =  "darkseagreen2","193" =  "darkslateblue",
           "194" =  "darkslategray2","195" =  "darkslategrey","196" =  "deeppink","197" =  "deeppink3","198" =  "deepskyblue1","199" =  "deepskyblue4","200" =  "dodgerblue","201" =  "dodgerblue3","202" =  "firebrick1","203" =  "firebrick4","204" =  "gainsboro","205" =  "gold1","206" =  "gold4","207" =  "goldenrod2","208" =  "gray","209" =  "gray17","210" =  "gray35","211" =  "gray53","212" =  "gray71","213" =  "gray92","214" =  "green","215" =  "green3","216" =  "honeydew","217" =  "honeydew3","218" =  "hotpink1","219" =  "hotpink4","220" =  "indianred2","221" =  "ivory","222" =  "ivory3","223" =  "khaki1","224" =  "khaki4","225" =  "lavenderblush1","226" =  "lavenderblush4","227" =  "lemonchiffon1","228" =  "lemonchiffon4","229" =  "lightblue2","230" =  "lightcoral","231" =  "lightcyan2","232" =  "lightgoldenrod","233" =  "lightgoldenrod3","234" =  "lightgray","235" =  "lightpink","236" =  "lightpink3","237" =  "lightsalmon1","238" =  "lightsalmon4","239" =  "lightskyblue1","240" =  "lightskyblue4","241" =  "lightslategrey","242" =  "lightsteelblue2","243" =  "lightyellow","244" =  "lightyellow3","245" =  "linen","246" =  "magenta2","247" =  "maroon","248" =  "maroon3","249" =  "mediumblue","250" =  "mediumorchid2","251" =  "mediumpurple","252" =  "mediumpurple3","253" =  "mediumslateblue","254" =  "mediumvioletred","255" =  "mistyrose","256" =  "mistyrose3","257" =  "navajowhite","258" =  "navajowhite3","259" =  "navyblue","260" =  "olivedrab1","261" =  "olivedrab4","262" =  "orange2","263" =  "orangered","264" =  "orangered3","265" =  "orchid1","266" =  "orchid4","267" =  "palegreen1","268" =  "palegreen4","269" =  "paleturquoise2","270" =  "palevioletred","271" =  "palevioletred3","272" =  "peachpuff","273" =  "peachpuff3","274" =  "pink","275" =  "pink3","276" =  "plum1","277" =  "plum4","278" =  "purple1","279" =  "purple4","280" =  "red2","281" =  "rosybrown","282" =  "rosybrown3","283" =  "royalblue1","284" =  "royalblue4","285" =  "salmon1","286" =  "salmon4","287" =  "seagreen1","288" =  "seagreen4","289" =  "seashell2","290" =  "sienna","291" =  "sienna3","292" =  "skyblue1","293" =  "skyblue4","294" =  "slateblue2","295" =  "slategray","296" =  "slategray3","297" =  "snow","298" =  "snow3","299" =  "springgreen1","300" =  "springgreen4","301" =  "steelblue2","302" =  "tan","303" =  "tan3","304" =  "thistle1","305" =  "thistle4","306" =  "tomato2","307" =  "turquoise","308" =  "turquoise3","309" =  "violetred","310" =  "violetred3","311" =  "wheat1","312" =  "wheat4","313" =  "yellow1","314" =  "yellow4","315" =  "aliceblue","316" =  "antiquewhite2","317" =  "aquamarine","318" =  "aquamarine3","319" =  "azure1","320" =  "azure4","321" =  "bisque1","322" =  "bisque4","323" =  "blue","324" =  "blue3","325" =  "brown","326" =  "brown3","327" =  "burlywood1","328" =  "burlywood4","329" =  "cadetblue2","330" =  "chartreuse","331" =  "chartreuse3","332" =  "chocolate1","333" =  "chocolate4","334" =  "coral2","335" =  "cornflowerblue","336" =  "cornsilk2","337" =  "cyan","338" =  "cyan3","339" =  "darkcyan","340" =  "darkgoldenrod2","341" =  "darkgray","342" =  "darkkhaki","343" =  "darkolivegreen1","344" =  "darkolivegreen4","345" =  "darkorange2","346" =  "darkorchid","347" =  "darkorchid3","348" =  "darksalmon","349" =  "darkseagreen2","350" =  "darkslateblue","351" =  "darkslategray2","352" =  "darkslategrey","353" =  "deeppink","354" =  "deeppink3","355" =  "deepskyblue1","356" =  "deepskyblue4","357" =  "dodgerblue","358" =  "dodgerblue3","359" =  "firebrick1","360" =  "firebrick4","361" =  "gainsboro","362" =  "gold1","363" =  "gold4","364" =  "goldenrod2","365" =  "gray","366" =  "gray17","367" =  "gray35","368" =  "gray53","369" =  "gray71","370" =  "gray92","371" =  "green","372" =  "green3","373" =  "honeydew","374" =  "honeydew3","375" =  "hotpink1","376" =  "hotpink4","377" =  "indianred2","378" =  "ivory","379" =  "ivory3","380" =  "khaki1","381" =  "khaki4","382" =  "lavenderblush1",
           "383" =  "lavenderblush4","384" =  "lemonchiffon1","385" =  "lemonchiffon4","386" =  "lightblue2","387" =  "lightcoral","388" =  "lightcyan2","389" =  "lightgoldenrod","390" =  "lightgoldenrod3","391" =  "lightgray","392" =  "lightpink","393" =  "lightpink3","394" =  "lightsalmon1","395" =  "lightsalmon4","396" =  "lightskyblue1","397" =  "lightskyblue4","398" =  "lightslategrey","399" =  "lightsteelblue2","400" =  "lightyellow","401" =  "lightyellow3","402" =  "linen","403" =  "magenta2","404" =  "maroon","405" =  "maroon3","406" =  "mediumblue","407" =  "mediumorchid2","408" =  "mediumpurple","409" =  "mediumpurple3","410" =  "mediumslateblue","411" =  "mediumvioletred","412" =  "mistyrose","413" =  "mistyrose3","414" =  "navajowhite","415" =  "navajowhite3","416" =  "navyblue","417" =  "olivedrab1","418" =  "olivedrab4","419" =  "orange2","420" =  "orangered","421" =  "orangered3","422" =  "orchid1","423" =  "orchid4","424" =  "palegreen1","425" =  "palegreen4","426" =  "paleturquoise2","427" =  "palevioletred","428" =  "palevioletred3","429" =  "peachpuff","430" =  "peachpuff3","431" =  "pink","432" =  "pink3","433" =  "plum1","434" =  "plum4","435" =  "purple1","436" =  "purple4","437" =  "red2","438" =  "rosybrown","439" =  "rosybrown3","440" =  "royalblue1","441" =  "royalblue4","442" =  "salmon1","443" =  "salmon4","444" =  "seagreen1","445" =  "seagreen4","446" =  "seashell2","447" =  "sienna","448" =  "sienna3","449" =  "skyblue1","450" =  "skyblue4","451" =  "slateblue2","452" =  "slategray","453" =  "slategray3","454" =  "snow","455" =  "snow3","456" =  "springgreen1","457" =  "springgreen4","458" =  "steelblue2","459" =  "tan","460" =  "tan3","461" =  "thistle1","462" =  "thistle4","463" =  "tomato2","464" =  "turquoise","465" =  "turquoise3","466" =  "violetred","467" =  "violetred3","468" =  "wheat1","469" =  "wheat4","470" =  "yellow1","471" =  "yellow4","472" =  "aliceblue","473" =  "antiquewhite2","474" =  "aquamarine","475" =  "aquamarine3","476" =  "azure1","477" =  "azure4","478" =  "bisque1","479" =  "bisque4","480" =  "blue","481" =  "blue3","482" =  "brown","483" =  "brown3","484" =  "burlywood1","485" =  "burlywood4","486" =  "cadetblue2","487" =  "chartreuse","488" =  "chartreuse3","489" =  "chocolate1","490" =  "chocolate4","491" =  "coral2","492" =  "cornflowerblue","493" =  "cornsilk2","494" =  "cyan","495" =  "cyan3","496" =  "darkcyan","497" =  "darkgoldenrod2","498" =  "darkgray","499" =  "darkkhaki","500" =  "darkolivegreen1","501" =  "darkolivegreen4","502" =  "darkorange2","503" =  "darkorchid","504" =  "darkorchid3","505" =  "darksalmon","506" =  "darkseagreen2","507" =  "darkslateblue","508" =  "darkslategray2","509" =  "darkslategrey","510" =  "deeppink","511" =  "deeppink3","512" =  "deepskyblue1","513" =  "deepskyblue4","514" =  "dodgerblue","515" =  "dodgerblue3","516" =  "firebrick1","517" =  "firebrick4","518" =  "gainsboro","519" =  "gold1","520" =  "gold4","521" =  "goldenrod2","522" =  "gray","523" =  "gray17","524" =  "gray35","525" =  "gray53","526" =  "gray71","527" =  "gray92","528" =  "green","529" =  "green3","530" =  "honeydew","531" =  "honeydew3","532" =  "hotpink1","533" =  "hotpink4","534" =  "indianred2","535" =  "ivory","536" =  "ivory3","537" =  "khaki1","538" =  "khaki4","539" =  "lavenderblush1","540" =  "lavenderblush4","541" =  "lemonchiffon1","542" =  "lemonchiffon4","543" =  "lightblue2","544" =  "lightcoral","545" =  "lightcyan2","546" =  "lightgoldenrod","547" =  "lightgoldenrod3","548" =  "lightgray","549" =  "lightpink","550" =  "lightpink3","551" =  "lightsalmon1","552" =  "lightsalmon4","553" =  "lightskyblue1","554" =  "lightskyblue4","555" =  "lightslategrey","556" =  "lightsteelblue2","557" =  "lightyellow","558" =  "lightyellow3","559" =  "linen","560" =  "magenta2","561" =  "maroon","562" =  "maroon3","563" =  "mediumblue","564" =  "mediumorchid2","565" =  "mediumpurple","566" =  "mediumpurple3","567" =  "mediumslateblue",
@@ -1315,15 +1317,18 @@ server <- function(input, output, session) {
     print(D1)
   })
   output$BOEM2 <- renderPlot({
-   sorted <- stomata_test()
-   D2<-ggplot(sorted, aes(x = Xcoord, y = InvY, colour = as.factor(OrigID_st), alpha=Type_D2)) +
-    geom_point(size = 0.1) +
-    scale_color_manual(values = colss)+
-    scale_alpha_manual(values = alphas)+
-    theme(panel.background = element_rect(fill = "gray27")) +
-    theme(panel.grid = element_blank(), legend.position = "none")
-  plot(D2)
- })
+    sorted <- stomata_test()
+    D2 <- ggplot(sorted, aes(x = Xcoord, y = InvY, colour = as.factor(OrigID_st), alpha = Type_D2)) +
+      geom_point(size = 0.1) +
+      scale_color_manual(values = colss) +
+      scale_alpha_manual(values = alphas) +
+      theme(panel.background = element_rect(fill = "gray27")) +
+      theme(panel.grid = element_blank(), legend.position = "none")
+    plot(D2)
+  })
+ ######################################
+ ## D3
+ ######################################
 }
 shinyApp(ui = ui, server = server)
 
