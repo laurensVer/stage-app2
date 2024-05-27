@@ -34,11 +34,12 @@ ui <- dashboardPage(
       ),
       menuItem("Compare genotypes", tabName = "compare genotypes", icon = icon("exchange")),
       menuItem("Cell tracking", tabName = "cell tracking", icon = icon("clock"),
-              menuSubItem("Upload Files", tabName = "upload_files"),
-              menuSubItem("Calculations", tabName = "calc"),
-              menuSubItem("Plots", tabName = "plot"),
-              menuSubItem("Cell_number", tabName = "cell_number"),
-              menuSubItem("Rotated plots", tabName = "rotated")
+               menuSubItem("Upload Files", tabName = "upload_files"),
+               menuSubItem("Calculations", tabName = "calc"),
+               menuSubItem("Plots", tabName = "plot"),
+               menuSubItem("Cell_number", tabName = "cell_number"),
+               menuSubItem("Rotated plots", tabName = "rotated"),
+               menuSubItem("Test", tabName = "test")
       ),
       menuItem("Return to Landing Page", tabName = "landing", icon = icon("arrow-left"), 
                style = "color: #333333; background-color: #FFFFFF; border-color: #DDDDDD;",  # Stijl voor de knop
@@ -46,17 +47,19 @@ ui <- dashboardPage(
     )
   ),
   dashboardBody(
-    tags$head(tags$style(HTML('
-      .modal.in .modal-dialog{
-        width:100%;
-        height:100%;
-        margin:0px;
-      }
-
-      .modal-content{
-        width:100%;
-        height:100%;
-      }
+    tags$head(
+      includeCSS("www/custom.css"),
+      tags$style(HTML('
+        .modal.in .modal-dialog{
+          width:100%;
+          height:100%;
+          margin:0px;
+        }
+  
+        .modal-content{
+          width:100%;
+          height:100%;
+        }
     '))),
     
     tabItems(
@@ -87,7 +90,7 @@ ui <- dashboardPage(
               )  
       ),
       tabItem(tabName = "graph1",
-                fluidRow(
+              fluidRow(
                 column(width = 8,
                        plotOutput("all_plot", width = "70%", height = "450px"),
                        downloadButton("foo", "Download Graph 1")
@@ -152,7 +155,7 @@ ui <- dashboardPage(
                     tabPanel("D5 Data", tableOutput("D5_table"))
                   )
                 )
-               )
+              )
       ),
       tabItem(tabName = "calc",
               h1("Calculation of stomatal index and stomatal density"),
@@ -228,11 +231,19 @@ ui <- dashboardPage(
                   )
                 )
               )
+      ),
+      tabItem(tabName = "test",
+              mainPanel(
+                fluidRow(
+                  column(4, 
+                         plotOutput("BAM"),
+                         plotOutput("BAM2")
+                  )
+                ))
       )
-     )
+    )
   )
 )
-
 
 server <- function(input, output, session) {
   set.seed(122)
@@ -719,7 +730,7 @@ server <- function(input, output, session) {
       SI_D1 <- nrSt_D1 / (nrPC_D1 + nrSt_D1)
       SD_D1 <- nrSt_D1 / sum(values_D1$area)
       calculations_list( c(calculations_list(), list(D1 = c(nrPC_D1 + nrSt_D1, nrPC_D1, nrSt_D1, SI_D1, SD_D1))) )
-      }
+    }
   })
   
   # Perform calculations for D2 similarly
@@ -888,25 +899,6 @@ server <- function(input, output, session) {
       labs(x = NULL, y = NULL)
   }
   
-  # Function to calculate the affine transformation matrix
-  calculate_affine_transformation <- function(src_points, dst_points) {
-    # src_points and dst_points should be matrices with each row as a point (x, y)
-    src_matrix <- cbind(src_points, 1)
-    dst_matrix <- cbind(dst_points, 1)
-    
-    transformation_matrix <- solve(t(src_matrix) %*% src_matrix) %*% t(src_matrix) %*% dst_matrix
-    transformation_matrix
-  }
-  
-  # Function to apply the affine transformation to data
-  apply_affine_transformation <- function(data, transformation_matrix) {
-    coords <- cbind(data$Xcoord, data$InvY, 1)
-    transformed_coords <- coords %*% transformation_matrix
-    data$Xcoord <- transformed_coords[, 1]
-    data$InvY <- transformed_coords[, 2]
-    data
-  }
-  
   # Reactive expressions for each dataset
   data1 <- reactive({ load_data(input$upload_data1) })
   data2 <- reactive({ load_data(input$upload_data2) })
@@ -954,178 +946,32 @@ server <- function(input, output, session) {
       column(4, numericInput("base_cell5", "Base Cell:", value = 3, min = 1))
     )
   })
+  
   # Render plots for each dataset
   output$plots1 <- renderPlot({
     plot_functions(data1(), input$top_cell1, input$right_cell1, input$base_cell1)
   })
   
   output$plots2 <- renderPlot({
-    # Get data for D1 and D2
-    data_d1 <- data1()
-    data_d2 <- data2()
-    
-    # Check if data for D1 and D2 are available
-    if (is.null(data_d1) || is.null(data_d2)) {
-      return(NULL)
-    }
-    
-    # Get IDs for top, right, and base cells for D1 and D2
-    ids_d1 <- c(input$top_cell1, input$right_cell1, input$base_cell1)
-    ids_d2 <- c(input$top_cell2, input$right_cell2, input$base_cell2)
-    
-    # Check if all IDs are available
-    if (any(is.na(ids_d1)) || any(is.na(ids_d2))) {
-      return(NULL)
-    }
-    
-    # Find corresponding coordinates in D1 for the top, right, and base cells in D2
-    coords_d1 <- data_d1[data_d1$ids %in% ids_d1, c("Xcoord", "InvY")]
-    coords_d2 <- data_d2[data_d2$ids %in% ids_d2, c("Xcoord", "InvY")]
-    
-    # Check if all coordinates are available
-    if (any(is.na(coords_d1)) || any(is.na(coords_d2))) {
-      return(NULL)
-    }
-    
-    # Calculate the difference in coordinates between D1 and D2
-    diff_coords <- colMeans(coords_d1) - colMeans(coords_d2)
-    
-    # Adjust the coordinates of D2 using the calculated difference
-    data_d2$Xcoord <- data_d2$Xcoord + diff_coords[1]
-    data_d2$InvY <- data_d2$InvY + diff_coords[2]
-    
-    # Create the plot for D2
-    plot_functions(data_d2, input$top_cell2, input$right_cell2, input$base_cell2) +
-      ggtitle("D2")
+    plot_functions(data2(), input$top_cell2, input$right_cell2, input$base_cell2)
   })
   
   output$plots3 <- renderPlot({
-    # Get data for D1 and D2
-    data_d1 <- data1()
-    data_d3 <- data3()
-    
-    # Check if data for D1 and D2 are available
-    if (is.null(data_d1) || is.null(data_d3)) {
-      return(NULL)
-    }
-    
-    # Get IDs for top, right, and base cells for D1 and D2
-    ids_d1 <- c(input$top_cell1, input$right_cell1, input$base_cell1)
-    ids_d3 <- c(input$top_cell3, input$right_cell3, input$base_cell3)
-    
-    # Check if all IDs are available
-    if (any(is.na(ids_d1)) || any(is.na(ids_d3))) {
-      return(NULL)
-    }
-    
-    # Find corresponding coordinates in D1 for the top, right, and base cells in D2
-    coords_d1 <- data_d1[data_d1$ids %in% ids_d1, c("Xcoord", "InvY")]
-    coords_d3 <- data_d3[data_d3$ids %in% ids_d3, c("Xcoord", "InvY")]
-    
-    # Check if all coordinates are available
-    if (any(is.na(coords_d1)) || any(is.na(coords_d3))) {
-      return(NULL)
-    }
-    
-    # Calculate the difference in coordinates between D1 and D2
-    diff_coords <- colMeans(coords_d1) - colMeans(coords_d3)
-    
-    # Adjust the coordinates of D2 using the calculated difference
-    data_d3$Xcoord <- data_d3$Xcoord + diff_coords[1]
-    data_d3$InvY <- data_d3$InvY + diff_coords[2]
-    
-    # Create the plot for D2
-    plot_functions(data_d3, input$top_cell3, input$right_cell3, input$base_cell3) +
-      ggtitle("D3")
+    plot_functions(data3(), input$top_cell3, input$right_cell3, input$base_cell3)
   })
   
   output$plots4 <- renderPlot({
-    # Get data for D1 and D4
-    data_d1 <- data1()
-    data_d4 <- data4()
-    
-    # Check if data for D1 and D4 are available
-    if (is.null(data_d1) || is.null(data_d4)) {
-      return(NULL)
-    }
-    
-    # Get IDs for top, right, and base cells for D1 and D4
-    ids_d1 <- c(input$top_cell1, input$right_cell1, input$base_cell1)
-    ids_d4 <- c(input$top_cell4, input$right_cell4, input$base_cell4)
-    
-    # Check if all IDs are available
-    if (any(is.na(ids_d1)) || any(is.na(ids_d4))) {
-      return(NULL)
-    }
-    
-    # Find corresponding coordinates in D1 for the top, right, and base cells in D4
-    coords_d1 <- data_d1[data_d1$ids %in% ids_d1, c("Xcoord", "InvY")]
-    coords_d4 <- data_d4[data_d4$ids %in% ids_d4, c("Xcoord", "InvY")]
-    
-    # Check if all coordinates are available
-    if (any(is.na(coords_d1)) || any(is.na(coords_d4))) {
-      return(NULL)
-    }
-    
-    # Calculate the difference in coordinates between D1 and D4
-    diff_coords <- colMeans(coords_d1) - colMeans(coords_d4)
-    
-    # Adjust the coordinates of D4 using the calculated difference
-    data_d4$Xcoord <- data_d4$Xcoord + diff_coords[1]
-    data_d4$InvY <- data_d4$InvY + diff_coords[2]
-    
-    # Create the plot for D4
-    plot_functions(data_d4, input$top_cell4, input$right_cell4, input$base_cell4) +
-      ggtitle("D4")
+    plot_functions(data4(), input$top_cell4, input$right_cell4, input$base_cell4)
   })
   
   output$plots5 <- renderPlot({
-    # Get data for D1 and D5
-    data_d1 <- data1()
-    data_d5 <- data5()
-    
-    # Check if data for D1 and D5 are available
-    if (is.null(data_d1) || is.null(data_d5)) {
-      return(NULL)
-    }
-    
-    # Get IDs for top, right, and base cells for D1 and D5
-    ids_d1 <- c(input$top_cell1, input$right_cell1, input$base_cell1)
-    ids_d5 <- c(input$top_cell5, input$right_cell5, input$base_cell5)
-    
-    # Check if all IDs are available
-    if (any(is.na(ids_d1)) || any(is.na(ids_d5))) {
-      return(NULL)
-    }
-    
-    # Find corresponding coordinates in D1 for the top, right, and base cells in D5
-    coords_d1 <- data_d1[data_d1$ids %in% ids_d1, c("Xcoord", "InvY")]
-    coords_d5 <- data_d5[data_d5$ids %in% ids_d5, c("Xcoord", "InvY")]
-    
-    # Check if all coordinates are available
-    if (any(is.na(coords_d1)) || any(is.na(coords_d5))) {
-      return(NULL)
-    }
-    
-    # Calculate the difference in coordinates between D1 and D5
-    diff_coords <- colMeans(coords_d1) - colMeans(coords_d5)
-    
-    # Adjust the coordinates of D5 using the calculated difference
-    data_d5$Xcoord <- data_d5$Xcoord + diff_coords[1]
-    data_d5$InvY <- data_d5$InvY + diff_coords[2]
-    
-    # Create the plot for D5
-    plot_functions(data_d5, input$top_cell5, input$right_cell5, input$base_cell5) +
-      ggtitle("D5")
+    plot_functions(data5(), input$top_cell5, input$right_cell5, input$base_cell5)
   })
-  ##############################################################################
-  ## stomata ##
-  #Stomata_D1<-subset(data_d1()[data_d1()$Type=="Stom",])
-  #Stomata_D2<-subset(data_d2()[data_d2$Type=="Stom",])
   
   ###########################################################
   ## New Calculations and Plot for Rotated Tab ##
   ###########################################################
+  # Observe the submit button to update the rotated tab plots
   observeEvent(input$submit, {
     lapply(1:5, function(i) {
       dataset <- get(paste0("data", i))()
@@ -1145,34 +991,224 @@ server <- function(input, output, session) {
             geom_point(size = 0.1) +
             scale_color_manual(values = cols) +
             theme(panel.background = element_rect(fill = "gray27")) +
-            theme(panel.grid = element_blank(), legend.position = "none") +
-            ggtitle("D", i)
+            theme(panel.grid = element_blank(), legend.position = "none")
         })
       }
     })
+  })
+  #########################
+  ## achtergrond rotatie op de values files
+  #########################
+  V_D1 <- reactive({ req(input$values_D1_file)
+    read.csv(input$values_D1_file$datapath)
+  })
+  V_D2 <- reactive({ req(input$values_D2_file)
+    read.csv(input$values_D2_file$datapath)
+  })
+  data1_D1 <- reactive({ 
+    load_data(input$upload_data1) })
+  data2_D2 <- reactive({ req(input$upload_data2)
+    read.csv(input$upload_data2$datapath)
+  })
+  
+  highlight_D1 <- reactive({
+    c(input$top_cell1, input$right_cell1, input$base_cell1)
+  })
+  highlight_D2 <- reactive({
+    c(input$top_cell2, input$right_cell2, input$base_cell2)
+  })
+  
+  sorted_All_D1 <- reactive({
+    req(V_D1(), highlight_D1(), data1_D1())
     
-    # Calculate and apply transformation for ALL relative to D1
-    for (i in 2:5) {
-      highlight_cells_d1 <- paste0("data", i - 1)()$ids %in% c(input[[paste0("top_cell", i - 1)]], input[[paste0("right_cell", i - 1)]], input[[paste0("base_cell", i - 1)]])
-      highlight_cells_d2 <- paste0("data", i)()$ids %in% c(input[[paste0("top_cell", i)]], input[[paste0("right_cell", i)]], input[[paste0("base_cell", i)]])
-      
-      if (all(highlight_cells_d1) && all(highlight_cells_d2)) {
-        d1_highlight_cells <- paste0("data", i - 1)()[highlight_cells_d1, c("Xcoord", "InvY")]
-        d2_highlight_cells <- paste0("data", i)()[highlight_cells_d2, c("Xcoord", "InvY")]
-        
-        transformation_matrix <- calculate_affine_transformation(as.matrix(d2_highlight_cells), as.matrix(d1_highlight_cells))
-        data2_transformed <- apply_affine_transformation(paste0("data", i)(), transformation_matrix)
-        
-        output[[paste0("D", i - 1, "_plot")]] <- renderPlot({
-          plot_functions(paste0("data", i - 1)(), input[[paste0("top_cell", i - 1)]], input[[paste0("right_cell", i - 1)]], input[[paste0("base_cell", i - 1)]])
-        })
-        
-        output[[paste0("D", i, "_plot")]] <- renderPlot({
-          plot_functions(data2_transformed, input[[paste0("top_cell", i)]], input[[paste0("right_cell", i)]], input[[paste0("base_cell", i)]])
-        })
+    # Debug prints
+    print("V_D1 structure:")
+    print(str(V_D1()))
+    print("highlight_D1 structure:")
+    print(str(highlight_D1()))
+    print("data1_D1 structure:")
+    print(str(data1_D1()))
+    print("data2_D2:")
+    print(str(data2_D2()))
+    
+    Values_D1_temp <- V_D1()
+    highlights <- highlight_D1()
+    
+    # Update the Type column to "Highlight" based on the highlight indices
+    Values_D1_temp$Type[Values_D1_temp$cellid %in% highlights] <- "Highlight"
+    
+    type_list_D1 <- rep(Values_D1_temp$Type, Values_D1_temp$areapx)
+    
+    sorted_All_D1 <- data1_D1()[order(data1_D1()$ids), ]
+    sorted_All_D1$Type <- type_list_D1
+    
+    # Debug prints
+    print("type_list_D1:")
+    print(head(type_list_D1))
+    print("sorted_All_D1:")
+    print(head(sorted_All_D1))
+    
+    sorted_All_D1
+  })
+  
+  sorted_All_D2 <- reactive({
+    req(V_D2(), highlight_D2(), data2_D2())
+    
+    # Fetch data and highlights
+    Values_D2_temp <- V_D2()
+    highlights <- highlight_D2()
+    
+    # Update the Type column to "Highlight" based on the highlight indices
+    Values_D2_temp$Type[Values_D2_temp$cellid %in% highlights] <- "Highlight"
+    
+    # Create a list of types repeated by area pixels
+    type_list_D2 <- rep(Values_D2_temp$Type, Values_D2_temp$areapx)
+    
+    # Sort data and update the Type column
+    sorted_All_D2 <- data2_D2()[order(data2_D2()$ids), ]
+    sorted_All_D2$Type <- type_list_D2
+    
+    sorted_All_D2
+  })
+  
+  test <- reactive({
+    req(V_D1(), V_D2(), highlight_D1(), highlight_D2(), sorted_All_D1())
+    Values_D1 <- V_D1()
+    print(str(Values_D1))
+    Values_D2 <- V_D2()
+    colnames(Values_D1)<-c("cellid_D1","area_D1","CoMX_D1","CoMY_D1","Peri_D1", "areapx_D1", "Circ_D1", "Type_D1")
+    colnames(Values_D2)<-c("cellid_D2","area_D2","CoMX_D2","CoMY_D2","Peri_D2", "areapx_D2", "Circ_D2", "Type_D2")
+    print("Values_D1 structure:")
+    print(str(Values_D1))
+    print("Values_D2 structure:")
+    print(str(Values_D2))
+    diff_x <- Values_D2[highlight_D2()[1], "CoMX_D2"] - Values_D1[highlight_D1()[1], "CoMX_D1"]
+    diff_y <- Values_D2[highlight_D2()[1], "CoMY_D2"] - Values_D1[highlight_D1()[1], "CoMY_D1"]
+    Values_D2[, "cor_CoMX_D2"] <- Values_D2[, "CoMX_D2"] - diff_x
+    Values_D2[, "cor_CoMY_D2"] <- Values_D2[, "CoMY_D2"] - diff_y
+    
+    side_a <- ((Values_D1[highlight_D1()[3], "CoMX_D1"] - Values_D2[highlight_D2()[3], "cor_CoMX_D2"])^2 + 
+                 (Values_D1[highlight_D1()[3], "CoMY_D1"] - Values_D2[highlight_D2()[3], "cor_CoMY_D2"])^2)^(1/2)
+    side_b <- ((Values_D1[highlight_D1()[1], "CoMX_D1"] - Values_D1[highlight_D1()[3], "CoMX_D1"])^2 + 
+                 (Values_D1[highlight_D1()[1], "CoMY_D1"] - Values_D1[highlight_D1()[3], "CoMY_D1"])^2)^(1/2)
+    side_c <- ((Values_D1[highlight_D1()[1], "CoMX_D1"] - Values_D2[highlight_D2()[3], "cor_CoMX_D2"])^2 + 
+                 (Values_D1[highlight_D1()[1], "CoMY_D1"] - Values_D2[highlight_D2()[3], "cor_CoMY_D2"])^2)^(1/2)
+    cos_alfa <- -(side_a^2 - side_b^2 - side_c^2) / (2 * side_b * side_c)
+    alfa <- acos(cos_alfa)
+    Values_D2[, "cor_CoMX_D2"] <- Values_D2[, "cor_CoMX_D2"] * cos(-alfa) - Values_D2[, "cor_CoMY_D2"] * sin(-alfa)
+    Values_D2[, "cor_CoMY_D2"] <- Values_D2[, "cor_CoMX_D2"] * sin(alfa) + Values_D2[, "cor_CoMY_D2"] * cos(alfa)
+    
+    width_D1 <- Values_D1[highlight_D1()[2], "CoMX_D1"] - Values_D1[highlight_D1()[1], "CoMX_D1"]
+    width_D2 <- Values_D2[highlight_D2()[2], "cor_CoMX_D2"] - Values_D2[highlight_D2()[1], "cor_CoMX_D2"]
+    Values_D2[, "cor_CoMX_D2"] <- (Values_D2[, "cor_CoMX_D2"] * (width_D1 / width_D2)) + 
+      (Values_D2[highlight_D2()[1], "cor_CoMX_D2"] * (width_D1 / width_D2))
+    height_D1 <- Values_D1[highlight_D1()[3], "CoMY_D1"] - Values_D1[highlight_D1()[1], "CoMY_D1"]
+    height_D2 <- Values_D2[highlight_D2()[3], "cor_CoMY_D2"] - Values_D2[highlight_D2()[1], "cor_CoMY_D2"]
+    Values_D2[, "cor_CoMY_D2"] <- Values_D2[, "cor_CoMY_D2"] * (height_D1 / height_D2) + 
+      (Values_D2[highlight_D2()[1], "cor_CoMY_D2"] * (height_D1 / height_D2))
+    
+    # Re-iterate the move only
+    diff_x <- Values_D2[highlight_D2()[1], "cor_CoMX_D2"] - Values_D1[highlight_D1()[1], "CoMX_D1"]
+    diff_y <- Values_D2[highlight_D2()[1], "cor_CoMY_D2"] - Values_D1[highlight_D1()[1], "CoMY_D1"]
+    Values_D2[, "cor_CoMX_D2"] <- Values_D2[, "cor_CoMX_D2"] - diff_x
+    Values_D2[, "cor_CoMY_D2"] <- Values_D2[, "cor_CoMY_D2"] - diff_y
+    
+    # Correction for distortion around the right highlight cell
+    dist_to_right <- ((((Values_D2[, "cor_CoMX_D2"] - Values_D2[highlight_D2()[2], "cor_CoMX_D2"])^2) + 
+                         ((Values_D2[, "cor_CoMY_D2"] - Values_D2[highlight_D2()[2], "cor_CoMY_D2"])^2))^(1/2))
+    dist_to_right <- dist_to_right / max(dist_to_right) + 0.1 # +0.1 is to not have 0 values, important for no error when taking log
+    
+    distortion <- (Values_D2[highlight_D2()[2], "cor_CoMY_D2"] - Values_D1[highlight_D1()[2], "CoMY_D1"]) * 
+      (-log10(dist_to_right))
+    
+    Values_D2[, "cor_CoMY_D2"] <- Values_D2[, "cor_CoMY_D2"] - distortion
+    list(Values_D1 = Values_D1, Values_D2 = Values_D2)
+  })
+  
+  stomata_test <- reactive({
+    req(test()$Values_D1, test()$Values_D2, data2_D2())
+    
+    Values_D1 <- test()$Values_D1
+    Values_D2 <- test()$Values_D2
+    
+    Stomata_D1 <- subset(Values_D1, Type_D1 == "Stom")
+    Stomata_D2 <- subset(Values_D2, Type_D2 == "Stom")
+    
+    # Renaming columns for stomata data frames
+    colnames(Stomata_D1) <- c("St_cellid_D1", "St_area_D1", "St_CoMX_D1", "St_CoMY_D1", "St_Peri_D1", "St_area_px_D1", "St_Circ_D1", "St_Type_D1")
+    colnames(Stomata_D2) <- c("St_cellid_D2", "St_area_D2", "St_old_CoMX_D2", "St_old_CoMY_D2", "St_Peri_D2", "St_area_px_D2", "St_Circ_D2", "St_Type_D2", "St_CoMX_D2", "St_CoMY_D2")
+    
+    # Coordinates
+    St_CoMX_D1_px <- Stomata_D1$St_CoMX_D1
+    St_CoMY_D1_px <- Stomata_D1$St_CoMY_D1
+    St_CoMX_D2_px <- Stomata_D2$St_CoMX_D2
+    St_CoMY_D2_px <- Stomata_D2$St_CoMY_D2
+    
+    St_scores <- numeric()
+    
+    for (j in 1:length(Stomata_D2$St_area_D2)) {
+      for (i in 1:length(Stomata_D1$St_area_D1)) {
+        St_pc <- sqrt(((St_CoMX_D2_px[j] - St_CoMX_D1_px[i]) * 2)^2 + (St_CoMY_D2_px[j] - St_CoMY_D1_px[i])^2)
+        St_scores <- c(St_scores, St_pc)
       }
     }
+    
+    St_scoretable <- matrix(St_scores, nrow = length(Stomata_D2$St_cellid_D2), ncol = length(Stomata_D1$St_cellid_D1), byrow = TRUE)
+    St_bestmatch <- apply(St_scoretable, 1, which.min)
+    
+    for (i in 1:length(St_bestmatch)) {
+      Stomata_D2$St_PrevID[i] <- Stomata_D1$St_cellid_D1[St_bestmatch[i]]
+      Stomata_D2$St_score[i] <- min(St_scoretable[i, ])
+    }
+    
+    PrevID_all_dbl_St <- unique(Stomata_D2[duplicated(Stomata_D2$St_PrevID), "St_PrevID"])
+    
+    for (i in 1:length(PrevID_all_dbl_St)) {
+      PrevID_dbl_St <- PrevID_all_dbl_St[i]
+      dbl_St_id <- Stomata_D2[Stomata_D2$St_PrevID == PrevID_dbl_St, "St_cellid_D2"]
+      dbl_St_scores <- Stomata_D2[Stomata_D2$St_PrevID == PrevID_dbl_St, "St_score"]
+      old_St <- which.min(dbl_St_scores)
+      
+      for (j in 1:length(dbl_St_id)) {
+        if (j != old_St) {
+          new_St <- dbl_St_id[j]
+          Values_D2[Values_D2$cellid_D2 == new_St, "Type_D2"] <- "NEW_Stom"
+        }
+      }
+    }
+    
+    # Sorting and updating the final data
+    sorted_All_D2 <- data2_D2()[order(data2_D2()$ids), ]
+    type_list_D2 <- rep(Values_D2$Type_D2, Values_D2$areapx_D2)
+    sorted_All_D2$Type_D2 <- type_list_D2
+    
+    sorted_All_D2
   })
+  
+  
+  cols <- c("Stom" = "chocolate3", "PC" = "aquamarine4", "NEW_Stom" = "black", "Highlight" = "white")
+  
+  output$BAM <- renderPlot({
+    test_result <- sorted_All_D1()
+    plot <- ggplot(test_result, aes(x = Xcoord, y = InvY, colour = Type)) +
+      geom_point(size = 0.1) +
+      scale_color_manual(values = cols) +
+      theme(panel.background = element_rect(fill = "gray27")) +
+      theme(panel.grid = element_blank(), legend.position = "none")
+    plot
+  })
+  
+  output$BAM2 <- renderPlot({
+    sorted_result <- stomata_test()
+    plot <- ggplot(sorted_result, aes(x = Xcoord, y = InvY, colour = Type_D2)) +
+      geom_point(size = 0.1) +
+      scale_color_manual(values = cols) +
+      theme(panel.background = element_rect(fill = "gray27")) +
+      theme(panel.grid = element_blank(), legend.position = "none")
+    plot
+  })
+  
+  
 }
 shinyApp(ui = ui, server = server)
 
