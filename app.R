@@ -268,13 +268,15 @@ ui <- dashboardPage(
                     div(style = "display: inline-block; width: 33%;", plotOutput("BAM")),
                     div(style = "display: inline-block; width: 33%;", plotOutput("BAM2")),
                     div(style = "display: inline-block; width: 33%;", plotOutput("BAM3")),
-                    div(style = "display: inline-block; width: 33%;", plotOutput("BAM4"))
+                    div(style = "display: inline-block; width: 33%;", plotOutput("BAM4")),
+                    div(style = "display: inline-block; width: 33%;", plotOutput("BAM5"))
                 ),
                 div(style = "overflow-x: auto; white-space: nowrap; width: 150%;",
                     div(style = "display: inline-block; width: 33%;", plotOutput("BOEM1")),
                     div(style = "display: inline-block; width: 33%;", plotOutput("BOEM2")),
                     div(style = "display: inline-block; width: 33%;", plotOutput("BOEM3")),
-                    div(style = "display: inline-block; width: 33%;", plotOutput("BOEM4"))
+                    div(style = "display: inline-block; width: 33%;", plotOutput("BOEM4")),
+                    div(style = "display: inline-block; width: 33%;", plotOutput("BOEM5"))
                     )
               )
       )
@@ -1048,6 +1050,9 @@ server <- function(input, output, session) {
   V_D4 <- reactive({ req(input$values_D4_file)
     read.csv(input$values_D4_file$datapath)
   })
+  V_D5 <- reactive({req(input$values_D5_file)
+    read.csv(input$values_D5_file$datapath)
+    })
   
   data1_D1 <- reactive({ 
     load_data(input$upload_data1)
@@ -1061,6 +1066,9 @@ server <- function(input, output, session) {
   data4_D4 <- reactive({ req(input$upload_data4)
     read.csv(input$upload_data4$datapath)
   })
+  data5_D5 <- reactive({ req(input$upload_data5)
+    read.csv(input$upload_data5$datapath)
+  })
   
   highlight_D1 <- reactive({
     c(input$top_cell1, input$right_cell1, input$base_cell1)
@@ -1073,6 +1081,9 @@ server <- function(input, output, session) {
   })
   highlight_D4 <- reactive({
     c(input$top_cell4, input$right_cell4, input$base_cell4)
+  })
+  highlight_D5 <- reactive({
+    c(input$top_cell5, input$right_cell5, input$base_cell5)
   })
   
   sorted_All_D1 <- reactive({
@@ -1668,6 +1679,178 @@ server <- function(input, output, session) {
     print(sorted_All_D4)
   }) 
   
+  test4 <- reactive({
+    req(V_D1(), V_D5(), highlight_D1(), highlight_D5())
+    Values_D1 <- V_D1()
+    Values_D5 <- V_D5()
+    print("this is Values D1:")
+    print(str(Values_D1))
+    print("this is values D5:")
+    print(str(Values_D5))
+    colnames(Values_D1) <- c("cellid_D1","area_D1","CoMX_D1","CoMY_D1","Peri_D1", "areapx_D1", "Circ_D1", "Type_D1")
+    colnames(Values_D5) <- c("cellid_D5","area_D5","CoMX_D5","CoMY_D5","Peri_D5", "areapx_D5", "Circ_D5", "Type_D5")
+    
+    diff_x <- Values_D5[highlight_D5()[1], "CoMX_D5"] - Values_D1[highlight_D1()[1], "CoMX_D1"]
+    diff_y <- Values_D5[highlight_D5()[1], "CoMY_D5"] - Values_D1[highlight_D1()[1], "CoMY_D1"]
+    Values_D5[, "cor_CoMX_D5"] <- Values_D5[, "CoMX_D5"] - diff_x
+    Values_D5[, "cor_CoMY_D5"] <- Values_D5[, "CoMY_D5"] - diff_y
+    
+    side_a <- ((Values_D1[highlight_D1()[3], "CoMX_D1"] - Values_D5[highlight_D5()[3], "cor_CoMX_D5"])^2 + 
+                 (Values_D1[highlight_D1()[3], "CoMY_D1"] - Values_D5[highlight_D5()[3], "cor_CoMY_D5"])^2)^(1/2)
+    side_b <- ((Values_D1[highlight_D1()[1], "CoMX_D1"] - Values_D1[highlight_D1()[3], "CoMX_D1"])^2 + 
+                 (Values_D1[highlight_D1()[1], "CoMY_D1"] - Values_D1[highlight_D1()[3], "CoMY_D1"])^2)^(1/2)
+    side_c <- ((Values_D1[highlight_D1()[1], "CoMX_D1"] - Values_D5[highlight_D5()[3], "cor_CoMX_D5"])^2 + 
+                 (Values_D1[highlight_D1()[1], "CoMY_D1"] - Values_D5[highlight_D5()[3], "cor_CoMY_D5"])^2)^(1/2)
+    cos_alfa <- -(side_a^2 - side_b^2 - side_c^2) / (2 * side_b * side_c)
+    alfa <- acos(cos_alfa)
+    Values_D5[, "cor_CoMX_D5"] <- Values_D5[, "cor_CoMX_D5"] * cos(-alfa) - Values_D5[, "cor_CoMY_D5"] * sin(-alfa)
+    Values_D5[, "cor_CoMY_D5"] <- Values_D5[, "cor_CoMX_D5"] * sin(alfa) + Values_D5[, "cor_CoMY_D5"] * cos(alfa)
+    
+    width_D1 <- Values_D1[highlight_D1()[2], "CoMX_D1"] - Values_D1[highlight_D1()[1], "CoMX_D1"]
+    width_D5 <- Values_D5[highlight_D5()[2], "cor_CoMX_D5"] - Values_D5[highlight_D5()[1], "cor_CoMX_D5"]
+    Values_D5[, "cor_CoMX_D5"] <- (Values_D5[, "cor_CoMX_D5"] * (width_D1 / width_D5)) + 
+      (Values_D5[highlight_D5()[1], "cor_CoMX_D5"] * (width_D1 / width_D5))
+    height_D1 <- Values_D1[highlight_D1()[3], "CoMY_D1"] - Values_D1[highlight_D1()[1], "CoMY_D1"]
+    height_D5 <- Values_D5[highlight_D5()[3], "cor_CoMY_D5"] - Values_D5[highlight_D5()[1], "cor_CoMY_D5"]
+    Values_D5[, "cor_CoMY_D5"] <- Values_D5[, "cor_CoMY_D5"] * (height_D1 / height_D5) + 
+      (Values_D5[highlight_D5()[1], "cor_CoMY_D5"] * (height_D1 / height_D5))
+    
+    # Re-iterate the move only
+    diff_x <- Values_D5[highlight_D5()[1], "cor_CoMX_D5"] - Values_D1[highlight_D1()[1], "CoMX_D1"]
+    diff_y <- Values_D5[highlight_D5()[1], "cor_CoMY_D5"] - Values_D1[highlight_D1()[1], "CoMY_D1"]
+    Values_D5[, "cor_CoMX_D5"] <- Values_D5[, "cor_CoMX_D5"] - diff_x
+    Values_D5[, "cor_CoMY_D5"] <- Values_D5[, "cor_CoMY_D5"] - diff_y
+    
+    # Correction for distortion around the right highlight cell
+    dist_to_right <- ((((Values_D5[, "cor_CoMX_D5"] - Values_D5[highlight_D5()[2], "cor_CoMX_D5"])^2) + 
+                         ((Values_D5[, "cor_CoMY_D5"] - Values_D5[highlight_D5()[2], "cor_CoMY_D5"])^2))^(1/2))
+    dist_to_right <- dist_to_right / max(dist_to_right) + 0.1 # +0.1 is to not have 0 values, important for no error when taking log
+    
+    distortion <- (Values_D5[highlight_D5()[2], "cor_CoMY_D5"] - Values_D1[highlight_D1()[2], "CoMY_D1"]) * 
+      (-log10(dist_to_right))
+    
+    Values_D5[, "cor_CoMY_D5"] <- Values_D5[, "cor_CoMY_D5"] - distortion
+    print("this is another text:")
+    print(str(Values_D5))
+    list(Values_D1 = Values_D1, Values_D5 = Values_D5)
+  })
+  
+  stomata_test4 <- reactive({
+    req(test3()$Values_D4, test4()$Values_D5, data5_D5())
+    
+    Values_D5 <- test4()$Values_D5
+    Values_D4 <- test3()$Values_D4
+    
+    print("this is Values D5 test: ")
+    print(str(Values_D5))
+    print("This is Values D4 test: ")
+    print(str(Values_D4))
+    
+    Stomata_D4 <- subset(Values_D4, Values_D4$Type_D4 == "Stom" | Values_D4$Type_D4 == "NEW_Stom")
+    Stomata_D4[Stomata_D4$Type_D4 == "NEW_Stom", "Type_D4"] <- "Stom"
+    Stomata_D5 <- subset(Values_D5, Values_D5$Type_D5 == "Stom")
+    
+    # Controleer de structuur van de subsets
+    print("Stomata_D4 test: ")
+    print(str(Stomata_D4))
+    print("Stomata_D5 test: ")
+    print(str(Stomata_D5))
+    
+    # Controleren of kolomnamen correct zijn toegewezen
+    colnames(Stomata_D4) <- c("St_cellid_D4","St_area_D4","St_CoMX_D4","St_CoMY_D4","areapx_D4","St_Peri_D4", "Circ_D4", "Type_D4", "St_cor_CoMX_D4","St_cor_CoMY_D4")
+    colnames(Stomata_D5) <- c("St_cellid_D5","St_area_D5","St_old_CoMX_D5", "St_old_CoMY_D5","areapx_D5","St_Peri_D5", "Circ_D5", "Type_D5", "St_cor_CoMX_D5","St_cor_CoMY_D5")
+    
+    print("Stomata_D4 after column renaming: ")
+    print(str(Stomata_D4))
+    print("Stomata_D5 after column renaming: ")
+    print(str(Stomata_D5))
+    
+    # Zorg ervoor dat de correcte kolommen gebruikt worden
+    St_cor_CoMX_D4_px <- Stomata_D4$St_cor_CoMX_D4 #* scale_D4
+    St_cor_CoMY_D4_px <- Stomata_D4$St_cor_CoMY_D4 #* scale_D4
+    St_cor_CoMX_D5_px <- Stomata_D5$St_cor_CoMX_D5 #* scale_D5
+    St_cor_CoMY_D5_px <- Stomata_D5$St_cor_CoMY_D5 #* scale_D5
+    
+    St_pos_ch <- c()
+    St_pc <- c()
+    St_scores <- c()
+    St_score <- c()
+    for (j in 1:length(Stomata_D5$St_area_D5)) {
+      for (i in 1:length(Stomata_D4$St_area_D4)) {
+        St_pc <- ((((St_cor_CoMX_D5_px[j] - St_cor_CoMX_D4_px[i]) * 10)^2 + (St_cor_CoMY_D5_px[j] - St_cor_CoMY_D4_px[i])^2)^(1/2))
+        St_pos_ch <- c(St_pos_ch, St_pc)
+        St_score <- St_pc
+        St_scores <- c(St_scores, St_score)
+        St_pc <- c()
+        St_score <- c()
+      }
+    }
+    
+    length(St_scores)
+    St_scoretable <- matrix(St_scores, nrow=length(Stomata_D5$St_cellid_D5), ncol=length(Stomata_D4$St_cellid_D4), byrow=TRUE)
+    View(St_scoretable)
+    St_bestmatch <- apply(St_scoretable, 1, which.min)
+    for (i in 1:length(St_bestmatch)) {
+      Stomata_D5$St_PrevID[i] <- Stomata_D4$St_cellid_D4[St_bestmatch[i]]
+      Stomata_D5$St_score[i] <- min(St_scoretable[i, ])
+    }
+    
+    
+    PrevID_all_dbl_St <- unique(Stomata_D5[duplicated(Stomata_D5$St_PrevID), "St_PrevID"])
+    length(PrevID_all_dbl_St) # Number of Stomata on D4 that gave rise to more than one Stomata on D5
+    
+    PrevID_dbl_St <- c()
+    dbl_St_id <- c()
+    dbl_St_scores <- c()
+    old_St <- c()
+    new_St <- c()
+    
+    for (i in 1:length(PrevID_all_dbl_St)) {
+      PrevID_dbl_St <- PrevID_all_dbl_St[i]
+      dbl_St_id <- Stomata_D5[Stomata_D5$St_PrevID == PrevID_dbl_St, "St_cellid_D5"]
+      dbl_St_scores <- Stomata_D5[Stomata_D5$St_PrevID == PrevID_dbl_St, "St_score"]
+      
+      # Controleer of dbl_St_scores geen ontbrekende waarden bevat
+      if (all(is.na(dbl_St_scores))) {
+        next
+      }
+      
+      print(dbl_St_scores)
+      old_St <- match(min(dbl_St_scores, na.rm = TRUE), dbl_St_scores)
+      for (j in 1:length(dbl_St_id)) {
+        if (j != old_St) {
+          new_St <- dbl_St_id[j]
+          print(new_St)
+          Values_D5[Values_D5$cellid_D5 == new_St, "Type_D5"] <- "NEW_Stom"
+        }
+      }
+    }
+    
+    PrevID_st <- c()
+    j <- 1
+    for (i in 1:length(Values_D5$cellid_D5)) {
+      if (Values_D5$Type_D5[i] == "PC" | Values_D5$Type_D5[i] == "Highlight") {
+        PrevID_st <- c(PrevID_st, 1)
+      }
+      if (Values_D5$Type_D5[i] == "Stom" | Values_D5$Type_D5[i] == "NEW_Stom") {
+        PrevID_st <- c(PrevID_st, Stomata_D5$St_PrevID[j])
+        j <- j + 1
+      }
+    }
+    
+    Values_D5$PrevID_st <- PrevID_st
+    colnames(Values_D5)
+    OrigID_D5_st <- rep(Values_D5$PrevID_st, Values_D5$areapx_D5)
+    length(OrigID_D5_st)
+    
+    type_list_D5 <- rep(Values_D5$Type_D5, Values_D5$areapx_D5)
+    sorted_All_D5 <- data5_D5()[order(data5_D5()$ids), ]
+    sorted_All_D5$Type <- type_list_D5
+    sorted_All_D5$OrigID_st <- OrigID_D5_st
+    sorted_All_D5
+    print(sorted_All_D5)
+  })
+  
   cols <- c("Stom" = "chocolate3", "PC" = "aquamarine4", "NEW_Stom" = "black", "Highlight" = "white")
   
   output$BAM <- renderPlot({
@@ -1676,7 +1859,9 @@ server <- function(input, output, session) {
       geom_point(size = 0.1) +
       scale_color_manual(values = cols) +
       theme(panel.background = element_rect(fill = "gray27")) +
-      theme(panel.grid = element_blank(), legend.position = "none")
+      theme(panel.grid = element_blank(), legend.position = "none") +
+      ggtitle("Day 1") +
+      theme(plot.title = element_text(hjust = 0.5))
     plot
   })
   output$BAM2 <- renderPlot({
@@ -1686,7 +1871,8 @@ server <- function(input, output, session) {
       scale_color_manual(values = cols) +
       theme(panel.background = element_rect(fill = "gray27")) +
       theme(panel.grid = element_blank(), legend.position = "none") +
-      ggtitle("D1")
+      ggtitle("Day 2") +
+      theme(plot.title = element_text(hjust = 0.5))
     plot
   })
   output$BAM3 <- renderPlot({
@@ -1695,7 +1881,9 @@ server <- function(input, output, session) {
       geom_point(size = 0.1) +
       scale_color_manual(values = cols)+
       theme(panel.background = element_rect(fill = "gray27")) +
-      theme(panel.grid = element_blank(), legend.position = "none")
+      theme(panel.grid = element_blank(), legend.position = "none") +
+      ggtitle("Day 3") +
+      theme(plot.title = element_text(hjust = 0.5))
     plot
   })
   output$BAM4 <- renderPlot({
@@ -1704,10 +1892,22 @@ server <- function(input, output, session) {
       geom_point(size = 0.1) +
       scale_color_manual(values = cols)+
       theme(panel.background = element_rect(fill = "gray27")) +
-      theme(panel.grid = element_blank(), legend.position = "none")
+      theme(panel.grid = element_blank(), legend.position = "none") +
+      ggtitle("Day 4") +
+      theme(plot.title = element_text(hjust = 0.5))
     plot
   })
-  
+  output$BAM5 <- renderPlot({
+    sorted_result <- stomata_test4()
+    plot<-ggplot(sorted_result, aes(x = Xcoord, y = InvY, colour = Type)) +
+      geom_point(size = 0.1) +
+      scale_color_manual(values = cols)+
+      theme(panel.background = element_rect(fill = "gray27")) +
+      theme(panel.grid = element_blank(), legend.position = "none") +
+      ggtitle("Day 5") +
+      theme(plot.title = element_text(hjust = 0.5))
+    plot
+  })
   
   alphas<-c("Stom"=1, "PC"=0.1, "NEW_Stom"=1, "Highlight"=0)
   colss<-c("1" =  "black","2" =  "antiquewhite2","3" =  "aquamarine","4" =  "aquamarine3","5" =  "azure1","6" =  "azure4","7" =  "bisque1","8" =  "bisque4","9" =  "blue","10" =  "blue3","11" =  "brown","12" =  "brown3","13" =  "burlywood1","14" =  "burlywood4","15" =  "cadetblue2","16" =  "chartreuse","17" =  "chartreuse3","18" =  "chocolate1","19" =  "chocolate4","20" =  "coral2","21" =  "cornflowerblue","22" =  "cornsilk2","23" =  "cyan","24" =  "cyan3","25" =  "darkcyan","26" =  "darkgoldenrod2","27" =  "darkgray","28" =  "darkkhaki","29" =  "darkolivegreen1","30" =  "darkolivegreen4","31" =  "darkorange2","32" =  "darkorchid","33" =  "darkorchid3","34" =  "darksalmon","35" =  "darkseagreen2","36" =  "darkslateblue","37" =  "darkslategray2","38" =  "darkslategrey","39" =  "deeppink","40" =  "deeppink3","41" =  "deepskyblue1","42" =  "deepskyblue4","43" =  "dodgerblue","44" =  "dodgerblue3","45" =  "firebrick1","46" =  "firebrick4","47" =  "gainsboro","48" =  "gold1","49" =  "gold4","50" =  "goldenrod2","51" =  "gray","52" =  "gray17","53" =  "gray35","54" =  "gray53","55" =  "gray71","56" =  "gray92","57" =  "green","58" =  "green3","59" =  "honeydew","60" =  "honeydew3","61" =  "hotpink1","62" =  "hotpink4","63" =  "indianred2","64" =  "ivory","65" =  "ivory3","66" =  "khaki1","67" =  "khaki4","68" =  "lavenderblush1","69" =  "lavenderblush4","70" =  "lemonchiffon1","71" =  "lemonchiffon4","72" =  "lightblue2","73" =  "lightcoral","74" =  "lightcyan2","75" =  "lightgoldenrod","76" =  "lightgoldenrod3","77" =  "lightgray","78" =  "lightpink","79" =  "lightpink3","80" =  "lightsalmon1","81" =  "lightsalmon4","82" =  "lightskyblue1","83" =  "lightskyblue4","84" =  "lightslategrey","85" =  "lightsteelblue2","86" =  "lightyellow","87" =  "lightyellow3","88" =  "linen","89" =  "magenta2","90" =  "maroon","91" =  "maroon3","92" =  "mediumblue","93" =  "mediumorchid2","94" =  "mediumpurple","95" =  "mediumpurple3","96" =  "mediumslateblue","97" =  "mediumvioletred","98" =  "mistyrose","99" =  "mistyrose3","100" =  "navajowhite","101" =  "navajowhite3","102" =  "navyblue","103" =  "olivedrab1","104" =  "olivedrab4","105" =  "orange2","106" =  "orangered","107" =  "orangered3","108" =  "orchid1","109" =  "orchid4","110" =  "palegreen1","111" =  "palegreen4","112" =  "paleturquoise2","113" =  "palevioletred","114" =  "palevioletred3","115" =  "peachpuff","116" =  "peachpuff3","117" =  "pink","118" =  "pink3","119" =  "plum1","120" =  "plum4","121" =  "purple1","122" =  "purple4","123" =  "red2","124" =  "rosybrown","125" =  "rosybrown3","126" =  "royalblue1","127" =  "royalblue4","128" =  "salmon1","129" =  "salmon4","130" =  "seagreen1","131" =  "seagreen4","132" =  "seashell2","133" =  "sienna","134" =  "sienna3","135" =  "skyblue1","136" =  "skyblue4","137" =  "slateblue2","138" =  "slategray","139" =  "slategray3","140" =  "snow","141" =  "snow3","142" =  "springgreen1","143" =  "springgreen4","144" =  "steelblue2","145" =  "tan","146" =  "tan3","147" =  "thistle1","148" =  "thistle4","149" =  "tomato2","150" =  "turquoise","151" =  "turquoise3","152" =  "violetred","153" =  "violetred3","154" =  "wheat1","155" =  "wheat4","156" =  "yellow1","157" =  "yellow4","158" =  "aliceblue","159" =  "antiquewhite2","160" =  "aquamarine","161" =  "aquamarine3","162" =  "azure1","163" =  "azure4","164" =  "bisque1","165" =  "bisque4","166" =  "blue","167" =  "blue3","168" =  "brown","169" =  "brown3","170" =  "burlywood1","171" =  "burlywood4","172" =  "cadetblue2","173" =  "chartreuse","174" =  "chartreuse3","175" =  "chocolate1","176" =  "chocolate4","177" =  "coral2","178" =  "cornflowerblue","179" =  "cornsilk2","180" =  "cyan","181" =  "cyan3","182" =  "darkcyan","183" =  "darkgoldenrod2","184" =  "darkgray","185" =  "darkkhaki","186" =  "darkolivegreen1","187" =  "darkolivegreen4","188" =  "darkorange2","189" =  "darkorchid","190" =  "darkorchid3","191" =  "darksalmon","192" =  "darkseagreen2","193" =  "darkslateblue",
@@ -1726,7 +1926,9 @@ server <- function(input, output, session) {
       scale_color_manual(values = colss) +
       scale_alpha_manual(values = alphas) +
       theme(panel.background = element_rect(fill = "gray27")) +
-      theme(panel.grid = element_blank(), legend.position = "none")
+      theme(panel.grid = element_blank(), legend.position = "none") +
+      ggtitle("Day 1") +
+      theme(plot.title = element_text(hjust = 0.5))
     print(D1)
   })
   output$BOEM2 <- renderPlot({
@@ -1736,7 +1938,9 @@ server <- function(input, output, session) {
       scale_color_manual(values = colss) +
       scale_alpha_manual(values = alphas) +
       theme(panel.background = element_rect(fill = "gray27")) +
-      theme(panel.grid = element_blank(), legend.position = "none")
+      theme(panel.grid = element_blank(), legend.position = "none") +
+      ggtitle("Day 2") +
+      theme(plot.title = element_text(hjust = 0.5))
     plot(D2)
   })
   output$BOEM3 <- renderPlot({
@@ -1746,7 +1950,9 @@ server <- function(input, output, session) {
       scale_color_manual(values = colss) +
       scale_alpha_manual(values = alphas) +
       theme(panel.background = element_rect(fill = "gray27")) +
-      theme(panel.grid = element_blank(), legend.position = "none")
+      theme(panel.grid = element_blank(), legend.position = "none") +
+      ggtitle("Day 3") +
+      theme(plot.title = element_text(hjust = 0.5))
     plot(D3)
   })
   output$BOEM4 <- renderPlot({
@@ -1756,8 +1962,22 @@ server <- function(input, output, session) {
       scale_color_manual(values = colss) +
       scale_alpha_manual(values = alphas) +
       theme(panel.background = element_rect(fill = "gray27")) +
-      theme(panel.grid = element_blank(), legend.position = "none")
+      theme(panel.grid = element_blank(), legend.position = "none") +
+      ggtitle("Day 4") +
+      theme(plot.title = element_text(hjust = 0.5))
     plot(D4)
+  })
+  output$BOEM5 <- renderPlot({
+    sorted_All_D5 <- stomata_test4()
+    D5 <- ggplot(sorted_All_D5, aes(x = Xcoord, y = InvY, colour = as.factor(OrigID_st), alpha = Type)) +
+      geom_point(size = 0.1) +
+      scale_color_manual(values = colss) +
+      scale_alpha_manual(values = alphas) +
+      theme(panel.background = element_rect(fill = "gray27")) +
+      theme(panel.grid = element_blank(), legend.position = "none") +
+      ggtitle("Day 5") +
+      theme(plot.title = element_text(hjust = 0.5))
+    plot(D5)
   })
   ######################################
   ## D3
