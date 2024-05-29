@@ -267,12 +267,14 @@ ui <- dashboardPage(
                 div(style = "overflow-x: auto; white-space: nowrap; width: 150%;",
                     div(style = "display: inline-block; width: 33%;", plotOutput("BAM")),
                     div(style = "display: inline-block; width: 33%;", plotOutput("BAM2")),
-                    div(style = "display: inline-block; width: 33%;", plotOutput("BAM3"))
+                    div(style = "display: inline-block; width: 33%;", plotOutput("BAM3")),
+                    div(style = "display: inline-block; width: 33%;", plotOutput("BAM4"))
                 ),
                 div(style = "overflow-x: auto; white-space: nowrap; width: 150%;",
                     div(style = "display: inline-block; width: 33%;", plotOutput("BOEM1")),
                     div(style = "display: inline-block; width: 33%;", plotOutput("BOEM2")),
-                    div(style = "display: inline-block; width: 33%;", plotOutput("BOEM3"))
+                    div(style = "display: inline-block; width: 33%;", plotOutput("BOEM3")),
+                    div(style = "display: inline-block; width: 33%;", plotOutput("BOEM4"))
                     )
               )
       )
@@ -1043,6 +1045,10 @@ server <- function(input, output, session) {
   V_D3 <- reactive({ req(input$values_D3_file)
     read.csv(input$values_D3_file$datapath)
   })
+  V_D4 <- reactive({ req(input$values_D4_file)
+    read.csv(input$values_D4_file$datapath)
+  })
+  
   data1_D1 <- reactive({ 
     load_data(input$upload_data1)
   })
@@ -1051,6 +1057,9 @@ server <- function(input, output, session) {
   })
   data3_D3 <- reactive({ req(input$upload_data3)
     read.csv(input$upload_data3$datapath)
+  })
+  data4_D4 <- reactive({ req(input$upload_data4)
+    read.csv(input$upload_data4$datapath)
   })
   
   highlight_D1 <- reactive({
@@ -1061,6 +1070,9 @@ server <- function(input, output, session) {
   })
   highlight_D3 <- reactive({
     c(input$top_cell3, input$right_cell3, input$base_cell3)
+  })
+  highlight_D4 <- reactive({
+    c(input$top_cell4, input$right_cell4, input$base_cell4)
   })
   
   sorted_All_D1 <- reactive({
@@ -1466,6 +1478,196 @@ server <- function(input, output, session) {
     print(sorted_All_D3)
   })
   
+  test3 <- reactive({
+    req(V_D1(), V_D4(), highlight_D1(), highlight_D4())
+    Values_D1 <- V_D1()
+    Values_D4 <- V_D4()
+    print("this is Values D1:")
+    print(str(Values_D1))
+    print("this is values D4:")
+    print(str(Values_D4))
+    colnames(Values_D1) <- c("cellid_D1","area_D1","CoMX_D1","CoMY_D1","Peri_D1", "areapx_D1", "Circ_D1", "Type_D1")
+    colnames(Values_D4) <- c("cellid_D4","area_D4","CoMX_D4","CoMY_D4","Peri_D4", "areapx_D4", "Circ_D4", "Type_D4")
+    
+    diff_x <- Values_D4[highlight_D4()[1], "CoMX_D4"] - Values_D1[highlight_D1()[1], "CoMX_D1"]
+    diff_y <- Values_D4[highlight_D4()[1], "CoMY_D4"] - Values_D1[highlight_D1()[1], "CoMY_D1"]
+    Values_D4[, "cor_CoMX_D4"] <- Values_D4[, "CoMX_D4"] - diff_x
+    Values_D4[, "cor_CoMY_D4"] <- Values_D4[, "CoMY_D4"] - diff_y
+    
+    side_a <- ((Values_D1[highlight_D1()[3], "CoMX_D1"] - Values_D4[highlight_D4()[3], "cor_CoMX_D4"])^2 + 
+                 (Values_D1[highlight_D1()[3], "CoMY_D1"] - Values_D4[highlight_D4()[3], "cor_CoMY_D4"])^2)^(1/2)
+    side_b <- ((Values_D1[highlight_D1()[1], "CoMX_D1"] - Values_D1[highlight_D1()[3], "CoMX_D1"])^2 + 
+                 (Values_D1[highlight_D1()[1], "CoMY_D1"] - Values_D1[highlight_D1()[3], "CoMY_D1"])^2)^(1/2)
+    side_c <- ((Values_D1[highlight_D1()[1], "CoMX_D1"] - Values_D4[highlight_D4()[3], "cor_CoMX_D4"])^2 + 
+                 (Values_D1[highlight_D1()[1], "CoMY_D1"] - Values_D4[highlight_D4()[3], "cor_CoMY_D4"])^2)^(1/2)
+    cos_alfa <- -(side_a^2 - side_b^2 - side_c^2) / (2 * side_b * side_c)
+    alfa <- acos(cos_alfa)
+    Values_D4[, "cor_CoMX_D4"] <- Values_D4[, "cor_CoMX_D4"] * cos(-alfa) - Values_D4[, "cor_CoMY_D4"] * sin(-alfa)
+    Values_D4[, "cor_CoMY_D4"] <- Values_D4[, "cor_CoMX_D4"] * sin(alfa) + Values_D4[, "cor_CoMY_D4"] * cos(alfa)
+    
+    width_D1 <- Values_D1[highlight_D1()[2], "CoMX_D1"] - Values_D1[highlight_D1()[1], "CoMX_D1"]
+    width_D4 <- Values_D4[highlight_D4()[2], "cor_CoMX_D4"] - Values_D4[highlight_D4()[1], "cor_CoMX_D4"]
+    Values_D4[, "cor_CoMX_D4"] <- (Values_D4[, "cor_CoMX_D4"] * (width_D1 / width_D4)) + 
+      (Values_D4[highlight_D4()[1], "cor_CoMX_D4"] * (width_D1 / width_D4))
+    height_D1 <- Values_D1[highlight_D1()[3], "CoMY_D1"] - Values_D1[highlight_D1()[1], "CoMY_D1"]
+    height_D4 <- Values_D4[highlight_D4()[3], "cor_CoMY_D4"] - Values_D4[highlight_D4()[1], "cor_CoMY_D4"]
+    Values_D4[, "cor_CoMY_D4"] <- Values_D4[, "cor_CoMY_D4"] * (height_D1 / height_D4) + 
+      (Values_D4[highlight_D4()[1], "cor_CoMY_D4"] * (height_D1 / height_D4))
+    
+    # Re-iterate the move only
+    diff_x <- Values_D4[highlight_D4()[1], "cor_CoMX_D4"] - Values_D1[highlight_D1()[1], "CoMX_D1"]
+    diff_y <- Values_D4[highlight_D4()[1], "cor_CoMY_D4"] - Values_D1[highlight_D1()[1], "CoMY_D1"]
+    Values_D4[, "cor_CoMX_D4"] <- Values_D4[, "cor_CoMX_D4"] - diff_x
+    Values_D4[, "cor_CoMY_D4"] <- Values_D4[, "cor_CoMY_D4"] - diff_y
+    
+    # Correction for distortion around the right highlight cell
+    dist_to_right <- ((((Values_D4[, "cor_CoMX_D4"] - Values_D4[highlight_D4()[2], "cor_CoMX_D4"])^2) + 
+                         ((Values_D4[, "cor_CoMY_D4"] - Values_D4[highlight_D4()[2], "cor_CoMY_D4"])^2))^(1/2))
+    dist_to_right <- dist_to_right / max(dist_to_right) + 0.1 # +0.1 is to not have 0 values, important for no error when taking log
+    
+    distortion <- (Values_D4[highlight_D4()[2], "cor_CoMY_D4"] - Values_D1[highlight_D1()[2], "CoMY_D1"]) * 
+      (-log10(dist_to_right))
+    
+    Values_D4[, "cor_CoMY_D4"] <- Values_D4[, "cor_CoMY_D4"] - distortion
+    print("this is another text:")
+    print(str(Values_D4))
+    list(Values_D1 = Values_D1, Values_D4 = Values_D4)
+  })
+  
+  stomata_test3 <- reactive({
+    req(test2()$Values_D3, test3()$Values_D4, data4_D4())
+    
+    Values_D4 <- test3()$Values_D4
+    Values_D3 <- test2()$Values_D3
+    
+    print("this is Values D4 test: ")
+    print(str(Values_D4))
+    print("This is Values D3 test: ")
+    print(str(Values_D3))
+    
+    Stomata_D3 <- subset(Values_D3, Values_D3$Type_D3 == "Stom" | Values_D3$Type_D3 == "NEW_Stom")
+    Stomata_D3[Stomata_D3$Type_D3 == "NEW_Stom", "Type_D3"] <- "Stom"
+    Stomata_D4 <- subset(Values_D4, Values_D4$Type_D4 == "Stom")
+    
+    # Controleer de structuur van de subsets
+    print("Stomata_D3 test: ")
+    print(str(Stomata_D3))
+    print("Stomata_D4 test: ")
+    print(str(Stomata_D4))
+    
+    # Controleren of kolomnamen correct zijn toegewezen
+    colnames(Stomata_D3) <- c("St_cellid_D3","St_area_D3","St_CoMX_D3","St_CoMY_D3","areapx_D3","St_Peri_D3", "Circ_D3", "Type_D3", "St_cor_CoMX_D3","St_cor_CoMY_D3")
+    colnames(Stomata_D4) <- c("St_cellid_D4","St_area_D4","St_old_CoMX_D4", "St_old_CoMY_D4","areapx_D4","St_Peri_D4", "Circ_D4", "Type_D4", "St_cor_CoMX_D4","St_cor_CoMY_D4")
+    
+    print("Stomata_D3 after column renaming: ")
+    print(str(Stomata_D3))
+    print("Stomata_D4 after column renaming: ")
+    print(str(Stomata_D4))
+    
+    # Zorg ervoor dat de correcte kolommen gebruikt worden
+    St_cor_CoMX_D3_px <- Stomata_D3$St_cor_CoMX_D3 #* scale_D3
+    St_cor_CoMY_D3_px <- Stomata_D3$St_cor_CoMY_D3 #* scale_D3
+    St_cor_CoMX_D4_px <- Stomata_D4$St_cor_CoMX_D4 #* scale_D4
+    St_cor_CoMY_D4_px <- Stomata_D4$St_cor_CoMY_D4 #* scale_D4
+    
+    St_pos_ch <- c()
+    St_pc <- c()
+    St_scores <- c()
+    St_score <- c()
+    for (j in 1:length(Stomata_D4$St_area_D4)) {
+      for (i in 1:length(Stomata_D3$St_area_D3)) {
+        St_pc <- ((((St_cor_CoMX_D4_px[j] - St_cor_CoMX_D3_px[i]) * 10)^2 + (St_cor_CoMY_D4_px[j] - St_cor_CoMY_D3_px[i])^2)^(1/2))
+        St_pos_ch <- c(St_pos_ch, St_pc)
+        St_score <- St_pc
+        St_scores <- c(St_scores, St_score)
+        St_pc <- c()
+        St_score <- c()
+      }
+    }
+    
+    length(St_scores)
+    St_scoretable <- matrix(St_scores, nrow=length(Stomata_D4$St_cellid_D4), ncol=length(Stomata_D3$St_cellid_D3), byrow=TRUE)
+    View(St_scoretable)
+    St_bestmatch <- apply(St_scoretable, 1, which.min)
+    for (i in 1:length(St_bestmatch)) {
+      Stomata_D4$St_PrevID[i] <- Stomata_D3$St_cellid_D3[St_bestmatch[i]]
+      Stomata_D4$St_score[i] <- min(St_scoretable[i, ])
+    }
+    
+    
+    PrevID_all_dbl_St <- unique(Stomata_D4[duplicated(Stomata_D4$St_PrevID), "St_PrevID"])
+    length(PrevID_all_dbl_St) # Number of Stomata on D3 that gave rise to more than one Stomata on D4
+    
+    PrevID_dbl_St <- c()
+    dbl_St_id <- c()
+    dbl_St_scores <- c()
+    old_St <- c()
+    new_St <- c()
+    
+    for (i in 1:length(PrevID_all_dbl_St)) {
+      PrevID_dbl_St <- PrevID_all_dbl_St[i]
+      dbl_St_id <- Stomata_D4[Stomata_D4$St_PrevID == PrevID_dbl_St, "St_cellid_D4"]
+      dbl_St_scores <- Stomata_D4[Stomata_D4$St_PrevID == PrevID_dbl_St, "St_score"]
+      
+      # Controleer of dbl_St_scores geen ontbrekende waarden bevat
+      if (all(is.na(dbl_St_scores))) {
+        next
+      }
+      
+      print(dbl_St_scores)
+      old_St <- match(min(dbl_St_scores, na.rm = TRUE), dbl_St_scores)
+      for (j in 1:length(dbl_St_id)) {
+        if (j != old_St) {
+          new_St <- dbl_St_id[j]
+          print(new_St)
+          Values_D4[Values_D4$cellid_D4 == new_St, "Type_D4"] <- "NEW_Stom"
+        }
+      }
+    }
+    
+    PrevID_st <- c()
+    j <- 1
+    for (i in 1:length(Values_D4$cellid_D4)) {
+      if (Values_D4$Type_D4[i] == "PC" | Values_D4$Type_D4[i] == "Highlight") {
+        PrevID_st <- c(PrevID_st, 1)
+      }
+      if (Values_D4$Type_D4[i] == "Stom" | Values_D4$Type_D4[i] == "NEW_Stom") {
+        PrevID_st <- c(PrevID_st, Stomata_D4$St_PrevID[j])
+        j <- j + 1
+      }
+    }
+    
+    Values_D4$PrevID_st <- PrevID_st
+    Old_stomata_D4 <- subset(Values_D4[Values_D4$Type_D4 == "Stom",])
+    attach(Old_stomata_D4)
+    PrevID_st <- c()
+    j <- 1
+    for (i in 1:length(Values_D4$cellid_D4)) {
+      if (Values_D4$Type_D4[i] == "PC" | Values_D4$Type_D4[i] == "Highlight") {
+        PrevID_st <- c(PrevID_st, 1)
+      }
+      if (Values_D4$Type_D4[i] == "NEW_Stom") {
+        PrevID_st <- c(PrevID_st, Values_D4$cellid_D4[i])
+      }
+      if (Values_D4$Type_D4[i] == "Stom") {
+        PrevID_st <- c(PrevID_st, Old_stomata_D4$PrevID_st[j])
+        j <- j + 1
+      }
+    }
+    
+    Values_D4$PrevID_st <- PrevID_st
+    colnames(Values_D4)
+    OrigID_D4_st <- rep(Values_D4$PrevID_st, Values_D4$areapx_D4)
+    length(OrigID_D4_st)
+    
+    type_list_D4 <- rep(Values_D4$Type_D4, Values_D4$areapx_D4)
+    sorted_All_D4 <- data4_D4()[order(data4_D4()$ids), ]
+    sorted_All_D4$Type <- type_list_D4
+    sorted_All_D4$OrigID_st <- OrigID_D4_st
+    sorted_All_D4
+    print(sorted_All_D4)
+  }) 
+  
   cols <- c("Stom" = "chocolate3", "PC" = "aquamarine4", "NEW_Stom" = "black", "Highlight" = "white")
   
   output$BAM <- renderPlot({
@@ -1483,11 +1685,21 @@ server <- function(input, output, session) {
       geom_point(size = 0.1) +
       scale_color_manual(values = cols) +
       theme(panel.background = element_rect(fill = "gray27")) +
-      theme(panel.grid = element_blank(), legend.position = "none")
+      theme(panel.grid = element_blank(), legend.position = "none") +
+      ggtitle("D1")
     plot
   })
   output$BAM3 <- renderPlot({
     sorted_result <- stomata_test2()
+    plot<-ggplot(sorted_result, aes(x = Xcoord, y = InvY, colour = Type)) +
+      geom_point(size = 0.1) +
+      scale_color_manual(values = cols)+
+      theme(panel.background = element_rect(fill = "gray27")) +
+      theme(panel.grid = element_blank(), legend.position = "none")
+    plot
+  })
+  output$BAM4 <- renderPlot({
+    sorted_result <- stomata_test3()
     plot<-ggplot(sorted_result, aes(x = Xcoord, y = InvY, colour = Type)) +
       geom_point(size = 0.1) +
       scale_color_manual(values = cols)+
@@ -1536,6 +1748,16 @@ server <- function(input, output, session) {
       theme(panel.background = element_rect(fill = "gray27")) +
       theme(panel.grid = element_blank(), legend.position = "none")
     plot(D3)
+  })
+  output$BOEM4 <- renderPlot({
+    sorted_All_D4 <- stomata_test3()
+    D4 <- ggplot(sorted_All_D4, aes(x = Xcoord, y = InvY, colour = as.factor(OrigID_st), alpha = Type)) +
+      geom_point(size = 0.1) +
+      scale_color_manual(values = colss) +
+      scale_alpha_manual(values = alphas) +
+      theme(panel.background = element_rect(fill = "gray27")) +
+      theme(panel.grid = element_blank(), legend.position = "none")
+    plot(D4)
   })
   ######################################
   ## D3
