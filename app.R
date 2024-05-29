@@ -39,7 +39,7 @@ ui <- dashboardPage(
                menuSubItem("Plots", tabName = "plot"),
                menuSubItem("Cell_number", tabName = "cell_number"),
                menuSubItem("Rotated plots", tabName = "rotated"),
-               menuSubItem("Test", tabName = "test")
+               menuSubItem("Plots", tabName = "test")
       ),
       menuItem("Return to Landing Page", tabName = "landing", icon = icon("arrow-left"), 
                style = "color: #333333; background-color: #FFFFFF; border-color: #DDDDDD;",  # Stijl voor de knop
@@ -252,38 +252,29 @@ ui <- dashboardPage(
       ),
       tabItem(tabName = "rotated",
               mainPanel(
-                fluidRow(
-                  column(6, plotOutput("D1_plot")),
-                  column(6, plotOutput("D2_plot"))
-                ),
-                fluidRow(
-                  column(6, plotOutput("D3_plot")),
-                  column(6, plotOutput("D4_plot"))
-                ),
-                fluidRow(
-                  column(6, plotOutput("D5_plot")) 
+                div(style = "overflow-x: auto; white-space: nowrap; width: 150%;",
+                    div(style = "display: inline-block; width: 33%;", plotOutput("D1_plot")),
+                    div(style = "display: inline-block; width: 33%;", plotOutput("D2_plot")),
+                    div(style = "display: inline-block; width: 33%;", plotOutput("D3_plot")),
+                    div(style = "display: inline-block; width: 33%;", plotOutput("D4_plot")),
+                    div(style = "display: inline-block; width: 33%;", plotOutput("D5_plot"))
+                    )
                 )
-              )
+                
       ),
       tabItem(tabName = "test",
               mainPanel(
-                fluidRow(
-                  column(6, 
-                         plotOutput("BAM")),  # Plot 1 in de eerste kolom
-                  column(6, 
-                         plotOutput("BAM2")),
-                  column(6,
-                         plotOutput("BAM3")),
-                  column(6,
-                         plotOutput("BOEM1")),
-                  column(6,
-                         plotOutput("BOEM2")),
-                  column(6,
-                         plotOutput("BOEM3"))
-                  
-                )
+                div(style = "overflow-x: auto; white-space: nowrap; width: 150%;",
+                    div(style = "display: inline-block; width: 33%;", plotOutput("BAM")),
+                    div(style = "display: inline-block; width: 33%;", plotOutput("BAM2")),
+                    div(style = "display: inline-block; width: 33%;", plotOutput("BAM3"))
+                ),
+                div(style = "overflow-x: auto; white-space: nowrap; width: 150%;",
+                    div(style = "display: inline-block; width: 33%;", plotOutput("BOEM1")),
+                    div(style = "display: inline-block; width: 33%;", plotOutput("BOEM2")),
+                    div(style = "display: inline-block; width: 33%;", plotOutput("BOEM3"))
+                    )
               )
-              
       )
     )
   )
