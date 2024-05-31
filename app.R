@@ -85,9 +85,6 @@ ui <- dashboardPage(
           background-color: #222d32;
           color: #ffffff;
         }
-        .content {
-          background-color: #ffffff;
-        }
         .nav-tabs-custom > .nav-tabs > li.active {
           border-top-color: #ffffff;
         }
@@ -95,23 +92,87 @@ ui <- dashboardPage(
     ),
     tabItems(
       tabItem(tabName = "dashboard",
-              h2("Background information")
+              tags$style(
+                HTML(
+                  "
+            .dashboard-background {
+              position: absolute;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 100%;
+              background-image: url('Achtergrond.jpg');
+              background-size: cover;
+              background-position: center;
+              background-repeat: no-repeat;
+            }
+            .dashboard-overlay {
+              position: absolute;
+              top: 0;
+              left: 0;
+              position: center;
+              width: 100%;
+              height: 100%;
+              background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent black overlay */
+            }
+            .dashboard-content {
+              position: relative;
+              z-index: 1; /* Ensure content appears above the background */
+              padding: 20px;
+              color: #ffffff; /* Text color */
+              top: 50px; /* Verplaats de tekst 50 pixels naar beneden */
+              left: 250px; /* Verplaats de tekst 50 pixels naar rechts
+            }
+            "
+                )
+              ),
+              div(
+                class = "dashboard-background",
+                div(class = "dashboard-overlay"),  # Semi-transparent overlay
+                div(
+                  class = "dashboard-content",
+                  fluidRow(
+                    column(
+                      width = 8,
+                      h2("Background Information"),
+                      p("Here is some general background information about the topic of your app. You can place text here to inform users about the purpose and context of the app."),
+                      hr(),  # Horizontal line for visual separation
+                      h3("Key Features"),
+                      tags$ul(
+                        tags$li("First feature"),
+                        tags$li("Second feature"),
+                        tags$li("Third feature")
+                      ),
+                      hr(),  # Horizontal line
+                      h3("More Information"),
+                      p("For more detailed information, you can add links to external sources, documentation, or other relevant information.")
+                    )
+                  )
+                )
+              )
       ),
       tabItem(tabName = "input_files",
               h1("Upload here your files"),
-              sidebarLayout(
-                sidebarPanel(
-                  fileInput("values_file", "Upload values file (.txt)"),
-                  fileInput("cells_file", "Upload position file (.txt)"),
-                  textInput("filename_prefix", "file name:"),
-                  br(),
-                  uiOutput("values_info"),
-                  uiOutput("cells_info")
-                ),
-                mainPanel(
-                  tableOutput("values_table"),
-                  tableOutput("cells_table")
+              fluidRow(
+                sidebarLayout(
+                  sidebarPanel(
+                    fileInput("values_file", "Upload values file (.txt)"),
+                    fileInput("cells_file", "Upload position file (.txt)"),
+                    textInput("filename_prefix", "file name:"),
+                    br(),
+                    uiOutput("values_info"),
+                    uiOutput("cells_info")
+                  ),
+                  mainPanel(
+                    tableOutput("values_table"),
+                    tableOutput("cells_table")
+                  )
                 )
+              ),
+              div(
+                class = "sun",
+                img(src = "https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExdXl5cG0wd2RnYWR1bzh2cjVicnRjdHE1MzgwZ3piazVjYmZjOXU3YSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l41Yk0Ovlxko5oYco/giphy.webp"),
+                style = "width: 70px; height: 100px;"
               )
       ),
       tabItem(tabName = "all_results",
@@ -258,9 +319,9 @@ ui <- dashboardPage(
                     div(style = "display: inline-block; width: 33%;", plotOutput("D3_plot")),
                     div(style = "display: inline-block; width: 33%;", plotOutput("D4_plot")),
                     div(style = "display: inline-block; width: 33%;", plotOutput("D5_plot"))
-                    )
                 )
-                
+              )
+              
       ),
       tabItem(tabName = "test",
               mainPanel(
@@ -277,7 +338,7 @@ ui <- dashboardPage(
                     div(style = "display: inline-block; width: 33%;", plotOutput("BOEM3")),
                     div(style = "display: inline-block; width: 33%;", plotOutput("BOEM4")),
                     div(style = "display: inline-block; width: 33%;", plotOutput("BOEM5"))
-                    )
+                )
               )
       )
     )
@@ -410,8 +471,8 @@ server <- function(input, output, session) {
           "1306" =  "goldenrod2","1307" =  "gray","1308" =  "gray17","1309" =  "gray35","1310" =  "gray53","1311" =  "gray71","1312" =  "gray92","1313" =  "green","1314" =  "green3","1315" =  "honeydew","1316" =  "honeydew3","1317" =  "hotpink1","1318" =  "hotpink4","1319" =  "indianred2","1320" =  "ivory","1321" =  "ivory3","1322" =  "khaki1","1323" =  "khaki4","1324" =  "lavenderblush1","1325" =  "lavenderblush4","1326" =  "lemonchiffon1","1327" =  "lemonchiffon4","1328" =  "lightblue2","1329" =  "lightcoral","1330" =  "lightcyan2","1331" =  "lightgoldenrod","1332" =  "lightgoldenrod3","1333" =  "lightgray","1334" =  "lightpink","1335" =  "lightpink3","1336" =  "lightsalmon1","1337" =  "lightsalmon4","1338" =  "lightskyblue1","1339" =  "lightskyblue4","1340" =  "lightslategrey","1341" =  "lightsteelblue2","1342" =  "lightyellow","1343" =  "lightyellow3","1344" =  "linen","1345" =  "magenta2","1346" =  "maroon","1347" =  "maroon3","1348" =  "mediumblue","1349" =  "mediumorchid2","1350" =  "mediumpurple","1351" =  "mediumpurple3","1352" =  "mediumslateblue","1353" =  "mediumvioletred","1354" =  "mistyrose","1355" =  "mistyrose3","1356" =  "navajowhite","1357" =  "navajowhite3","1358" =  "navyblue","1359" =  "olivedrab1","1360" =  "olivedrab4","1361" =  "orange2","1362" =  "orangered","1363" =  "orangered3","1364" =  "orchid1","1365" =  "orchid4","1366" =  "palegreen1","1367" =  "palegreen4","1368" =  "paleturquoise2","1369" =  "palevioletred","1370" =  "palevioletred3","1371" =  "peachpuff","1372" =  "peachpuff3","1373" =  "pink","1374" =  "pink3","1375" =  "plum1","1376" =  "plum4","1377" =  "purple1","1378" =  "purple4","1379" =  "red2","1380" =  "rosybrown","1381" =  "rosybrown3","1382" =  "royalblue1","1383" =  "royalblue4","1384" =  "salmon1","1385" =  "salmon4","1386" =  "seagreen1","1387" =  "seagreen4","1388" =  "seashell2","1389" =  "sienna","1390" =  "sienna3","1391" =  "skyblue1","1392" =  "skyblue4","1393" =  "slateblue2","1394" =  "slategray","1395" =  "slategray3","1396" =  "snow","1397" =  "snow3","1398" =  "springgreen1","1399" =  "springgreen4","1400" =  "steelblue2","1401" =  "tan","1402" =  "tan3","1403" =  "thistle1","1404" =  "thistle4","1405" =  "tomato2","1406" =  "turquoise","1407" =  "turquoise3","1408" =  "violetred","1409" =  "violetred3","1410" =  "wheat1","1411" =  "wheat4","1412" =  "yellow1","1413" =  "yellow4","1414" =  "aliceblue","1415" =  "antiquewhite2","1416" =  "aquamarine","1417" =  "aquamarine3","1418" =  "azure1","1419" =  "azure4","1420" =  "bisque1","1421" =  "bisque4","1422" =  "blue","1423" =  "blue3","1424" =  "brown","1425" =  "brown3","1426" =  "burlywood1","1427" =  "burlywood4","1428" =  "cadetblue2","1429" =  "chartreuse","1430" =  "chartreuse3","1431" =  "chocolate1","1432" =  "chocolate4","1433" =  "coral2","1434" =  "cornflowerblue","1435" =  "cornsilk2","1436" =  "cyan","1437" =  "cyan3","1438" =  "darkcyan","1439" =  "darkgoldenrod2","1440" =  "darkgray","1441" =  "darkkhaki","1442" =  "darkolivegreen1","1443" =  "darkolivegreen4","1444" =  "darkorange2","1445" =  "darkorchid","1446" =  "darkorchid3","1447" =  "darksalmon","1448" =  "darkseagreen2","1449" =  "darkslateblue","1450" =  "darkslategray2","1451" =  "darkslategrey","1452" =  "deeppink","1453" =  "deeppink3","1454" =  "deepskyblue1","1455" =  "deepskyblue4","1456" =  "dodgerblue","1457" =  "dodgerblue3","1458" =  "firebrick1","1459" =  "firebrick4","1460" =  "gainsboro","1461" =  "gold1","1462" =  "gold4","1463" =  "goldenrod2","1464" =  "gray","1465" =  "gray17","1466" =  "gray35","1467" =  "gray53","1468" =  "gray71","1469" =  "gray92","1470" =  "green","1471" =  "green3","1472" =  "honeydew","1473" =  "honeydew3","1474" =  "hotpink1","1475" =  "hotpink4","1476" =  "indianred2","1477" =  "ivory","1478" =  "ivory3","1479" =  "khaki1","1480" =  "khaki4","1481" =  "lavenderblush1","1482" =  "lavenderblush4","1483" =  "lemonchiffon1","1484" =  "lemonchiffon4","1485" =  "lightblue2",
           "1486" =  "lightcoral","1487" =  "lightcyan2","1488" =  "lightgoldenrod","1489" =  "lightgoldenrod3","1490" =  "lightgray","1491" =  "lightpink","1492" =  "lightpink3","1493" =  "lightsalmon1","1494" =  "lightsalmon4","1495" =  "lightskyblue1","1496" =  "lightskyblue4","1497" =  "lightslategrey","1498" =  "lightsteelblue2","1499" =  "lightyellow","1500" =  "lightyellow3")
   output$all_plot <- renderPlot({
-    req(cell_coordinates())
-    plot_data <- ggplot(cell_coordinates(), aes(x = Xcoord, y = InvY, colour = as.factor(ids))) +
+    test <- cell_coordinates()
+    plot_data <- ggplot(test, aes(x = Xcoord, y = InvY, colour = as.factor(ids))) +
       geom_point(size = 0.7) + theme_minimal() +
       scale_color_manual(values = cols) +
       theme(legend.position = "none")  # Verwijder de legende
@@ -1052,7 +1113,7 @@ server <- function(input, output, session) {
   })
   V_D5 <- reactive({req(input$values_D5_file)
     read.csv(input$values_D5_file$datapath)
-    })
+  })
   
   data1_D1 <- reactive({ 
     load_data(input$upload_data1)
@@ -1153,7 +1214,7 @@ server <- function(input, output, session) {
   })
   
   test <- reactive({
-    req(V_D1(), V_D2(), highlight_D1(), highlight_D2(), sorted_All_D1())
+    req(V_D1(), V_D2(), highlight_D1(), highlight_D2())
     Values_D1 <- V_D1()
     Values_D2 <- V_D2()
     colnames(Values_D1)<-c("cellid_D1","area_D1","CoMX_D1","CoMY_D1","Peri_D1", "areapx_D1", "Circ_D1", "Type_D1")
@@ -1209,9 +1270,10 @@ server <- function(input, output, session) {
     
     Values_D1 <- test()$Values_D1
     Values_D2 <- test()$Values_D2
+    
     Stomata_D1 <- subset(Values_D1, Type_D1 == "Stom")
     Stomata_D2 <- subset(Values_D2, Type_D2 == "Stom")
-    print(str(Stomata_D1))
+    
     # Renaming columns for stomata data frames
     colnames(Stomata_D1) <- c("St_cellid_D1", "St_area_D1", "St_CoMX_D1", "St_CoMY_D1", "St_Peri_D1", "St_area_px_D1", "St_Circ_D1", "St_Type_D1")
     colnames(Stomata_D2) <- c("St_cellid_D2", "St_area_D2", "St_old_CoMX_D2", "St_old_CoMY_D2", "St_Peri_D2", "St_area_px_D2", "St_Circ_D2", "St_Type_D2", "St_CoMX_D2", "St_CoMY_D2")
@@ -1255,49 +1317,79 @@ server <- function(input, output, session) {
       }
     }
     
-    PrevID_st <- c()
+    D2_PrevID_st <- c()
     j <- 1
     for (i in 1:length(Values_D2$cellid_D2)) {
       if (Values_D2$Type_D2[i] == "PC" | Values_D2$Type_D2[i] == "Highlight") {
-        PrevID_st <- c(PrevID_st, 1)
+        D2_PrevID_st <- c(D2_PrevID_st, 1)
       }
       if (Values_D2$Type_D2[i] == "Stom" | Values_D2$Type_D2[i] == "NEW_Stom") {
-        PrevID_st <- c(PrevID_st, Stomata_D2$St_PrevID[j])
+        D2_PrevID_st <- c(D2_PrevID_st, Stomata_D2$St_PrevID[j])
         j <- j + 1
       }
     }
     
-    Values_D2$PrevID_st <- PrevID_st
-    Old_stomata_D2<-subset(Values_D2[Values_D2$Type_D2=="Stom",])
+    Values_D2$D2_PrevID_st <- D2_PrevID_st
+    Old_stomata_D2 <- subset(Values_D2[Values_D2$Type_D2 == "Stom", ])
     attach(Old_stomata_D2)
-    PrevID_st<-c()
-    j<-1
-    for (i in 1:length(Values_D2$cellid_D2)){
-      if (Values_D2$Type_D2[i]=="PC"|Values_D2$Type_D2[i]=="Highlight"){
-        PrevID_st<-c(PrevID_st,1)
+    D2_PrevID_st <- c()
+    j <- 1
+    for (i in 1:length(Values_D2$cellid_D2)) {
+      if (Values_D2$Type_D2[i] == "PC" | Values_D2$Type_D2[i] == "Highlight") {
+        D2_PrevID_st <- c(D2_PrevID_st, 1)
       }
-      if (Values_D2$Type_D2[i]=="NEW_Stom"){
-        PrevID_st<-c(PrevID_st,Values_D2$cellid_D2[i])
+      if (Values_D2$Type_D2[i] == "NEW_Stom") {
+        D2_PrevID_st <- c(D2_PrevID_st, Values_D2$cellid_D2[i])
       }
-      if (Values_D2$Type_D2[i]=="Stom"){
-        PrevID_st<-c(PrevID_st,Old_stomata_D2$PrevID_st[j])
-        j<-j+1
+      if (Values_D2$Type_D2[i] == "Stom") {
+        D2_PrevID_st <- c(D2_PrevID_st, Old_stomata_D2$D2_PrevID_st[j])
+        j <- j + 1
       }
     }
     
-    Values_D2$PrevID_st <- PrevID_st
-    colnames(Values_D2)
-    OrigID_D2_st <- rep(Values_D2$PrevID_st, Values_D2$areapx_D2)
-    length(OrigID_D2_st)
+    Values_D2$D2_PrevID_st <- D2_PrevID_st
+    OrigID_D2_st <- rep(Values_D2$D2_PrevID_st, Values_D2$areapx_D2)
     
     # Sorting and updating the final data
     sorted_All_D2 <- data2_D2()[order(data2_D2()$ids), ]
     type_list_D2 <- rep(Values_D2$Type_D2, Values_D2$areapx_D2)
     sorted_All_D2$Type_D2 <- type_list_D2
-    print(str(Values_D2))
     sorted_All_D2$OrigID_st <- OrigID_D2_st
-    sorted_All_D2
     
+    # Return both Values_D2 and sorted_All_D2 in a list
+    list(Values_D2 = Values_D2, sorted_All_D2 = sorted_All_D2)
+  })
+  
+  Values_D2 <- reactive({
+    req(stomata_test())
+    
+    stomata_result <- stomata_test()
+    
+    print("Resultaat van stomata_test:")
+    print(str(stomata_result$Values_D2))
+    
+    values_D2 <- stomata_result$Values_D2
+    
+    print("BOEM BAM THIS IS VALUES-D2: ")
+    print(str(values_D2))
+    
+    return(values_D2)
+  })
+  
+  sorted_All_D2 <- reactive({
+    req(stomata_test())
+    
+    stomata_result <- stomata_test()
+    
+    print("Resultaat van stomata_test (sorted_All_D2):")
+    print(str(stomata_result$sorted_All_D2))
+    
+    sorted_all_d2 <- stomata_result$sorted_All_D2
+    
+    print("BOEM BAM THIS IS sorted_All_D2: ")
+    print(str(sorted_all_d2))
+    
+    return(sorted_all_d2)
   })
   
   test2 <- reactive({
@@ -1356,139 +1448,139 @@ server <- function(input, output, session) {
     list(Values_D1 = Values_D1, Values_D3 = Values_D3)
   })
   stomata_test2 <- reactive({
-    req(test()$Values_D2, test2()$Values_D3, data3_D3())
+    req(Values_D2(), test2()$Values_D3, data3_D3())
     
     Values_D3 <- test2()$Values_D3
-    Values_D2 <- test()$Values_D2
+    Values_D2 <- Values_D2()
     
     print("this is Values D3 test: ")
     print(str(Values_D3))
     print("This is Values D2 test: ")
     print(str(Values_D2))
     
-    Stomata_D2 <- subset(Values_D2, Values_D2$Type_D2 == "Stom" | Values_D2$Type_D2 == "NEW_Stom")
-    Stomata_D2[Stomata_D2$Type_D2 == "NEW_Stom", "Type_D2"] <- "Stom"
-    Stomata_D3 <- subset(Values_D3, Values_D3$Type_D3 == "Stom")
+    #First, the stomata are extracted from the datasets (again only D1 and D2)
+    #Stomata_D2<-subset(Values_D2[Values_D2$Type_D2=="Stom"|Values_D2$Type_D2=="NEW_Stom",]) #Deze zin is aangepast om ook NEW_stom mee te nemen
+    Stomata_D3<-subset(Values_D3[Values_D3$Type_D3=="Stom",])
+    #colnames(Stomata_D2)<-c("St_cellid_D2","St_area_D2","St_old_CoMX_D2", "St_old_CoMY_D2","St_Peri_D2","St_area_px_D2", "St_Circ_D2", "St_Type_D2", "St_CoMX_D2","St_CoMY_D2")
+    colnames(Stomata_D3)<-c("St_cellid_D3","St_area_D3","St_old_CoMX_D3", "St_old_CoMY_D3","St_Peri_D3","St_area_px_D3", "St_Circ_D3", "St_Type_D3", "St_CoMX_D3","St_CoMY_D3")
+    #attach(Stomata_D2)
+    attach(Stomata_D3)
+    St_CoMX_D2_px<-St_CoMX_D2#*scale_D2
+    St_CoMY_D2_px<-St_CoMY_D2#*scale_D2
+    St_CoMX_D3_px<-St_CoMX_D3#*scale_D3
+    St_CoMY_D3_px<-St_CoMY_D3#*scale_D3
     
-    # Controleer de structuur van de subsets
-    print("Stomata_D2 test: ")
-    print(str(Stomata_D2))
-    print("Stomata_D3 test: ")
-    print(str(Stomata_D3))
-    
-    # Controleren of kolomnamen correct zijn toegewezen
-    colnames(Stomata_D2) <- c("St_cellid_D2","St_area_D2","St_CoMX_D2","St_CoMY_D2","areapx_D2","St_Peri_D2", "Circ_D2", "Type_D2", "St_cor_CoMX_D2","St_cor_CoMY_D2")
-    colnames(Stomata_D3) <- c("St_cellid_D3","St_area_D3","St_old_CoMX_D3", "St_old_CoMY_D3","areapx_D3","St_Peri_D3", "Circ_D3", "Type_D3", "St_cor_CoMX_D3","St_cor_CoMY_D3")
-    
-    print("Stomata_D2 after column renaming: ")
-    print(str(Stomata_D2))
-    print("Stomata_D3 after column renaming: ")
-    print(str(Stomata_D3))
-    
-    # Zorg ervoor dat de correcte kolommen gebruikt worden
-    St_cor_CoMX_D2_px <- Stomata_D2$St_cor_CoMX_D2 #* scale_D2
-    St_cor_CoMY_D2_px <- Stomata_D2$St_cor_CoMY_D2 #* scale_D2
-    St_cor_CoMX_D3_px <- Stomata_D3$St_cor_CoMX_D3 #* scale_D3
-    St_cor_CoMY_D3_px <- Stomata_D3$St_cor_CoMY_D3 #* scale_D3
-    
-    St_pos_ch <- c()
-    St_pc <- c()
-    St_scores <- c()
-    St_score <- c()
-    for (j in 1:length(Stomata_D3$St_area_D3)) {
-      for (i in 1:length(Stomata_D2$St_area_D2)) {
-        St_pc <- ((((St_cor_CoMX_D3_px[j] - St_cor_CoMX_D2_px[i]) * 10)^2 + (St_cor_CoMY_D3_px[j] - St_cor_CoMY_D2_px[i])^2)^(1/2))
-        St_pos_ch <- c(St_pos_ch, St_pc)
-        St_score <- St_pc
-        St_scores <- c(St_scores, St_score)
-        St_pc <- c()
-        St_score <- c()
+    St_pos_ch<-c()
+    St_pc<-c()
+    for (j in 1:length(St_area_D3)){
+      for (i in 1:length(St_area_D2)){
+        St_pc<-(((((St_CoMX_D3_px[j]-St_CoMX_D2_px[i])*2)^2)+((St_CoMY_D3_px[j]-St_CoMY_D2_px[i])^2))^(1/2))
+        St_pos_ch<-c(St_pos_ch,St_pc)
+        St_pc<-c()
       }
     }
-    
+    St_scores<-St_pos_ch
     length(St_scores)
-    St_scoretable <- matrix(St_scores, nrow=length(Stomata_D3$St_cellid_D3), ncol=length(Stomata_D2$St_cellid_D2), byrow=TRUE)
-    View(St_scoretable)
-    St_bestmatch <- apply(St_scoretable, 1, which.min)
-    for (i in 1:length(St_bestmatch)) {
-      Stomata_D3$St_PrevID[i] <- Stomata_D2$St_cellid_D2[St_bestmatch[i]]
-      Stomata_D3$St_score[i] <- min(St_scoretable[i, ])
+    St_scoretable<-matrix(St_scores,nrow=length(St_cellid_D3), ncol=length(St_cellid_D2), byrow=TRUE)
+    #View(St_scoretable)
+    St_bestmatch<-apply(St_scoretable, 1, which.min)
+    for (i in 1:length(St_bestmatch)){
+      Stomata_D3$D3_St_PrevID[i]<-St_cellid_D2[St_bestmatch[i]]
+      Stomata_D3$D3_St_score[i]<-min(St_scoretable[i,])
     }
     
+    PrevID_all_dbl_St<-unique(Stomata_D3[duplicated(Stomata_D3$D3_St_PrevID),11])
+    length(PrevID_all_dbl_St)#Number of Stomata on D2 that gave rise to more than one Stomata on D3
     
-    PrevID_all_dbl_St <- unique(Stomata_D3[duplicated(Stomata_D3$St_PrevID), "St_PrevID"])
-    length(PrevID_all_dbl_St) # Number of Stomata on D2 that gave rise to more than one Stomata on D3
-    
-    PrevID_dbl_St <- c()
-    dbl_St_id <- c()
-    dbl_St_scores <- c()
-    old_St <- c()
-    new_St <- c()
-    
-    for (i in 1:length(PrevID_all_dbl_St)) {
-      PrevID_dbl_St <- PrevID_all_dbl_St[i]
-      dbl_St_id <- Stomata_D3[Stomata_D3$St_PrevID == PrevID_dbl_St, "St_cellid_D3"]
-      dbl_St_scores <- Stomata_D3[Stomata_D3$St_PrevID == PrevID_dbl_St, "St_score"]
-      
-      # Controleer of dbl_St_scores geen ontbrekende waarden bevat
-      if (all(is.na(dbl_St_scores))) {
-        next
-      }
-      
+    PrevID_dbl_St<-c()
+    dbl_St_id<-c()
+    dbl_St_scores<-c()
+    old_St<-c()
+    new_St<-c()
+    for (i in 1:length(PrevID_all_dbl_St)){
+      PrevID_dbl_St<-PrevID_all_dbl_St[i]
+      dbl_St_id<-Stomata_D3[Stomata_D3$D3_St_PrevID==PrevID_dbl_St,1]
+      dbl_St_scores<-Stomata_D3[Stomata_D3$D3_St_PrevID==PrevID_dbl_St,12]
       print(dbl_St_scores)
-      old_St <- match(min(dbl_St_scores, na.rm = TRUE), dbl_St_scores)
-      for (j in 1:length(dbl_St_id)) {
-        if (j != old_St) {
-          new_St <- dbl_St_id[j]
+      old_St<-match(min(dbl_St_scores),dbl_St_scores)
+      for (j in 1:length(dbl_St_id)){
+        if (j != old_St){
+          new_St<-dbl_St_id[j]
           print(new_St)
-          Values_D3[Values_D3$cellid_D3 == new_St, "Type_D3"] <- "NEW_Stom"
+          Values_D3[Values_D3$cellid_D3==new_St,8]<-"NEW_Stom"
+        }
+      }
+    }
+    table(Values_D3$Type_D3)
+    
+    D3_PrevID_st <- c()
+    
+    for (i in 1:length(Values_D3$cellid_D3)){
+      if (Values_D3$Type_D3[i]=="PC" | Values_D3$Type_D3[i]=="Highlight"){
+        D3_PrevID_st <- c(D3_PrevID_st, 1)
+      }
+      if (Values_D3$Type_D3[i]=="NEW_Stom"){
+        D3_PrevID_st <- c(D3_PrevID_st, Values_D3$cellid_D3[i])
+      }
+      if (Values_D3$Type_D3[i]=="Stom"){
+        cellnr <- Values_D3$cellid_D3[i]
+        # Hieronder de aanpassing om de ontbrekende waarden te vervangen door NA
+        if (is.na(Stomata_D3$D3_St_PrevID[Stomata_D3$St_cellid_D3==cellnr])) {
+          D3_PrevID_st <- c(D3_PrevID_st, NA)
+        } else {
+          D3_PrevID_st <- c(D3_PrevID_st, Values_D2$D2_PrevID_st[Stomata_D3$D3_St_PrevID[Stomata_D3$St_cellid_D3==cellnr]])
         }
       }
     }
     
-    PrevID_st <- c()
-    j <- 1
-    for (i in 1:length(Values_D3$cellid_D3)) {
-      if (Values_D3$Type_D3[i] == "PC" | Values_D3$Type_D3[i] == "Highlight") {
-        PrevID_st <- c(PrevID_st, 1)
-      }
-      if (Values_D3$Type_D3[i] == "Stom" | Values_D3$Type_D3[i] == "NEW_Stom") {
-        PrevID_st <- c(PrevID_st, Stomata_D3$St_PrevID[j])
-        j <- j + 1
-      }
-    }
+    # Vervang eventuele NA-waarden door 0 of een andere geschikte waarde, afhankelijk van je gegevens
+    D3_PrevID_st[is.na(D3_PrevID_st)] <- 0
     
-    Values_D3$PrevID_st <- PrevID_st
-    Old_stomata_D3 <- subset(Values_D3[Values_D3$Type_D3 == "Stom",])
-    attach(Old_stomata_D3)
-    PrevID_st <- c()
-    j <- 1
-    for (i in 1:length(Values_D3$cellid_D3)) {
-      if (Values_D3$Type_D3[i] == "PC" | Values_D3$Type_D3[i] == "Highlight") {
-        PrevID_st <- c(PrevID_st, 1)
-      }
-      if (Values_D3$Type_D3[i] == "NEW_Stom") {
-        PrevID_st <- c(PrevID_st, Values_D3$cellid_D3[i])
-      }
-      if (Values_D3$Type_D3[i] == "Stom") {
-        PrevID_st <- c(PrevID_st, Old_stomata_D3$PrevID_st[j])
-        j <- j + 1
-      }
-    }
-    
-    Values_D3$PrevID_st <- PrevID_st
+    Values_D3$D3_PrevID_st <- D3_PrevID_st
+    attach(Values_D3)
     colnames(Values_D3)
-    OrigID_D3_st <- rep(Values_D3$PrevID_st, Values_D3$areapx_D3)
+    OrigID_D3_st<-rep(Values_D3$D3_PrevID_st,areapx_D3)
     length(OrigID_D3_st)
     
     type_list_D3 <- rep(Values_D3$Type_D3, Values_D3$areapx_D3)
     sorted_All_D3 <- data3_D3()[order(data3_D3()$ids), ]
     sorted_All_D3$Type <- type_list_D3
     sorted_All_D3$OrigID_st <- OrigID_D3_st
-    sorted_All_D3
-    print(sorted_All_D3)
+    # Return both Values_D2 and sorted_All_D2 in a list
+    list(Values_D3 = Values_D3, sorted_All_D3 = sorted_All_D3)
   })
   
+  Values_D3 <- reactive({
+    req(stomata_test2())
+    
+    stomata_result <- stomata_test2()
+    
+    print("Resultaat van stomata_test2:")
+    print(str(stomata_result$Values_D3))
+    
+    values_D3 <- stomata_result$Values_D3
+    
+    print("BOEM BAM THIS IS VALUES-D3: ")
+    print(str(values_D3))
+    
+    return(values_D3)
+  })
+  
+  sorted_All_D3 <- reactive({
+    req(stomata_test2())
+    
+    stomata_result <- stomata_test2()
+    
+    print("Resultaat van stomata_test (sorted_All_D3):")
+    print(str(stomata_result$sorted_All_D3))
+    
+    sorted_all_d3 <- stomata_result$sorted_All_D3
+    
+    print("BOEM BAM THIS IS sorted_All_D3: ")
+    print(str(sorted_all_d3))
+    
+    return(sorted_all_d3)
+  })
   test3 <- reactive({
     req(V_D1(), V_D4(), highlight_D1(), highlight_D4())
     Values_D1 <- V_D1()
@@ -1546,309 +1638,138 @@ server <- function(input, output, session) {
   })
   
   stomata_test3 <- reactive({
-    req(test2()$Values_D3, test3()$Values_D4, data4_D4())
+    req(Values_D3(), test3()$Values_D4, data4_D4())
     
     Values_D4 <- test3()$Values_D4
-    Values_D3 <- test2()$Values_D3
+    Values_D3 <- Values_D3()
     
     print("this is Values D4 test: ")
     print(str(Values_D4))
     print("This is Values D3 test: ")
     print(str(Values_D3))
     
-    Stomata_D3 <- subset(Values_D3, Values_D3$Type_D3 == "Stom" | Values_D3$Type_D3 == "NEW_Stom")
-    Stomata_D3[Stomata_D3$Type_D3 == "NEW_Stom", "Type_D3"] <- "Stom"
-    Stomata_D4 <- subset(Values_D4, Values_D4$Type_D4 == "Stom")
+    #First, the stomata are extracted from the datasets (again only D1 and D2)
+    #Stomata_D2<-subset(Values_D2[Values_D2$Type_D2=="Stom"|Values_D2$Type_D2=="NEW_Stom",]) #Deze zin is aangepast om ook NEW_stom mee te nemen
+    Stomata_D4<-subset(Values_D4[Values_D4$Type_D4=="Stom",])
+    #colnames(Stomata_D2)<-c("St_cellid_D2","St_area_D2","St_old_CoMX_D2", "St_old_CoMY_D2","St_Peri_D2","St_area_px_D2", "St_Circ_D2", "St_Type_D2", "St_CoMX_D2","St_CoMY_D2")
+    colnames(Stomata_D4)<-c("St_cellid_D4","St_area_D4","St_old_CoMX_D4", "St_old_CoMY_D4","St_Peri_D4","St_area_px_D4", "St_Circ_D4", "St_Type_D4", "St_CoMX_D4","St_CoMY_D4")
+    #attach(Stomata_D2)
+    attach(Stomata_D4)
+    St_CoMX_D3_px<-St_CoMX_D3#*scale_D2
+    St_CoMY_D3_px<-St_CoMY_D3#*scale_D2
+    St_CoMX_D4_px<-St_CoMX_D4#*scale_D3
+    St_CoMY_D4_px<-St_CoMY_D4#*scale_D3
     
-    # Controleer de structuur van de subsets
-    print("Stomata_D3 test: ")
-    print(str(Stomata_D3))
-    print("Stomata_D4 test: ")
-    print(str(Stomata_D4))
-    
-    # Controleren of kolomnamen correct zijn toegewezen
-    colnames(Stomata_D3) <- c("St_cellid_D3","St_area_D3","St_CoMX_D3","St_CoMY_D3","areapx_D3","St_Peri_D3", "Circ_D3", "Type_D3", "St_cor_CoMX_D3","St_cor_CoMY_D3")
-    colnames(Stomata_D4) <- c("St_cellid_D4","St_area_D4","St_old_CoMX_D4", "St_old_CoMY_D4","areapx_D4","St_Peri_D4", "Circ_D4", "Type_D4", "St_cor_CoMX_D4","St_cor_CoMY_D4")
-    
-    print("Stomata_D3 after column renaming: ")
-    print(str(Stomata_D3))
-    print("Stomata_D4 after column renaming: ")
-    print(str(Stomata_D4))
-    
-    # Zorg ervoor dat de correcte kolommen gebruikt worden
-    St_cor_CoMX_D3_px <- Stomata_D3$St_cor_CoMX_D3 #* scale_D3
-    St_cor_CoMY_D3_px <- Stomata_D3$St_cor_CoMY_D3 #* scale_D3
-    St_cor_CoMX_D4_px <- Stomata_D4$St_cor_CoMX_D4 #* scale_D4
-    St_cor_CoMY_D4_px <- Stomata_D4$St_cor_CoMY_D4 #* scale_D4
-    
-    St_pos_ch <- c()
-    St_pc <- c()
-    St_scores <- c()
-    St_score <- c()
-    for (j in 1:length(Stomata_D4$St_area_D4)) {
-      for (i in 1:length(Stomata_D3$St_area_D3)) {
-        St_pc <- ((((St_cor_CoMX_D4_px[j] - St_cor_CoMX_D3_px[i]) * 10)^2 + (St_cor_CoMY_D4_px[j] - St_cor_CoMY_D3_px[i])^2)^(1/2))
-        St_pos_ch <- c(St_pos_ch, St_pc)
-        St_score <- St_pc
-        St_scores <- c(St_scores, St_score)
-        St_pc <- c()
-        St_score <- c()
+    St_pos_ch<-c()
+    St_pc<-c()
+    for (j in 1:length(St_area_D4)){
+      for (i in 1:length(St_area_D3)){
+        St_pc<-(((((St_CoMX_D4_px[j]-St_CoMX_D3_px[i])*2)^2)+((St_CoMY_D4_px[j]-St_CoMY_D3_px[i])^2))^(1/2))
+        St_pos_ch<-c(St_pos_ch,St_pc)
+        St_pc<-c()
       }
     }
-    
+    St_scores<-St_pos_ch
     length(St_scores)
-    St_scoretable <- matrix(St_scores, nrow=length(Stomata_D4$St_cellid_D4), ncol=length(Stomata_D3$St_cellid_D3), byrow=TRUE)
-    View(St_scoretable)
-    St_bestmatch <- apply(St_scoretable, 1, which.min)
-    for (i in 1:length(St_bestmatch)) {
-      Stomata_D4$St_PrevID[i] <- Stomata_D3$St_cellid_D3[St_bestmatch[i]]
-      Stomata_D4$St_score[i] <- min(St_scoretable[i, ])
+    St_scoretable<-matrix(St_scores,nrow=length(St_cellid_D4), ncol=length(St_cellid_D3), byrow=TRUE)
+    #View(St_scoretable)
+    St_bestmatch<-apply(St_scoretable, 1, which.min)
+    for (i in 1:length(St_bestmatch)){
+      Stomata_D4$D4_St_PrevID[i]<-St_cellid_D3[St_bestmatch[i]]
+      Stomata_D4$D4_St_score[i]<-min(St_scoretable[i,])
     }
     
+    PrevID_all_dbl_St<-unique(Stomata_D4[duplicated(Stomata_D4$D4_St_PrevID),11])
+    length(PrevID_all_dbl_St)#Number of Stomata on D2 that gave rise to more than one Stomata on D3
     
-    PrevID_all_dbl_St <- unique(Stomata_D4[duplicated(Stomata_D4$St_PrevID), "St_PrevID"])
-    length(PrevID_all_dbl_St) # Number of Stomata on D3 that gave rise to more than one Stomata on D4
-    
-    PrevID_dbl_St <- c()
-    dbl_St_id <- c()
-    dbl_St_scores <- c()
-    old_St <- c()
-    new_St <- c()
-    
-    for (i in 1:length(PrevID_all_dbl_St)) {
-      PrevID_dbl_St <- PrevID_all_dbl_St[i]
-      dbl_St_id <- Stomata_D4[Stomata_D4$St_PrevID == PrevID_dbl_St, "St_cellid_D4"]
-      dbl_St_scores <- Stomata_D4[Stomata_D4$St_PrevID == PrevID_dbl_St, "St_score"]
-      
-      # Controleer of dbl_St_scores geen ontbrekende waarden bevat
-      if (all(is.na(dbl_St_scores))) {
-        next
-      }
-      
+    PrevID_dbl_St<-c()
+    dbl_St_id<-c()
+    dbl_St_scores<-c()
+    old_St<-c()
+    new_St<-c()
+    for (i in 1:length(PrevID_all_dbl_St)){
+      PrevID_dbl_St<-PrevID_all_dbl_St[i]
+      dbl_St_id<-Stomata_D4[Stomata_D4$D4_St_PrevID==PrevID_dbl_St,1]
+      dbl_St_scores<-Stomata_D4[Stomata_D4$D4_St_PrevID==PrevID_dbl_St,12]
       print(dbl_St_scores)
-      old_St <- match(min(dbl_St_scores, na.rm = TRUE), dbl_St_scores)
-      for (j in 1:length(dbl_St_id)) {
-        if (j != old_St) {
-          new_St <- dbl_St_id[j]
+      old_St<-match(min(dbl_St_scores),dbl_St_scores)
+      for (j in 1:length(dbl_St_id)){
+        if (j != old_St){
+          new_St<-dbl_St_id[j]
           print(new_St)
-          Values_D4[Values_D4$cellid_D4 == new_St, "Type_D4"] <- "NEW_Stom"
+          Values_D4[Values_D4$cellid_D4==new_St,8]<-"NEW_Stom"
+        }
+      }
+    }
+    table(Values_D4$Type_D4)
+    
+    D4_PrevID_st <- c()
+    
+    for (i in 1:length(Values_D4$cellid_D4)){
+      if (Values_D4$Type_D4[i]=="PC" | Values_D4$Type_D4[i]=="Highlight"){
+        D4_PrevID_st <- c(D4_PrevID_st, 1)
+      }
+      if (Values_D4$Type_D4[i]=="NEW_Stom"){
+        D4_PrevID_st <- c(D4_PrevID_st, Values_D4$cellid_D4[i])
+      }
+      if (Values_D4$Type_D4[i]=="Stom"){
+        cellnr <- Values_D4$cellid_D4[i]
+        # Hieronder de aanpassing om de ontbrekende waarden te vervangen door NA
+        if (is.na(Stomata_D4$D4_St_PrevID[Stomata_D4$St_cellid_D4==cellnr])) {
+          D4_PrevID_st <- c(D4_PrevID_st, NA)
+        } else {
+          D4_PrevID_st <- c(D4_PrevID_st, Values_D3$D3_PrevID_st[Stomata_D4$D4_St_PrevID[Stomata_D4$St_cellid_D4==cellnr]])
         }
       }
     }
     
-    PrevID_st <- c()
-    j <- 1
-    for (i in 1:length(Values_D4$cellid_D4)) {
-      if (Values_D4$Type_D4[i] == "PC" | Values_D4$Type_D4[i] == "Highlight") {
-        PrevID_st <- c(PrevID_st, 1)
-      }
-      if (Values_D4$Type_D4[i] == "Stom" | Values_D4$Type_D4[i] == "NEW_Stom") {
-        PrevID_st <- c(PrevID_st, Stomata_D4$St_PrevID[j])
-        j <- j + 1
-      }
-    }
+    # Vervang eventuele NA-waarden door 0 of een andere geschikte waarde, afhankelijk van je gegevens
+    D4_PrevID_st[is.na(D4_PrevID_st)] <- 0
     
-    Values_D4$PrevID_st <- PrevID_st
-    Old_stomata_D4 <- subset(Values_D4[Values_D4$Type_D4 == "Stom",])
-    attach(Old_stomata_D4)
-    PrevID_st <- c()
-    j <- 1
-    for (i in 1:length(Values_D4$cellid_D4)) {
-      if (Values_D4$Type_D4[i] == "PC" | Values_D4$Type_D4[i] == "Highlight") {
-        PrevID_st <- c(PrevID_st, 1)
-      }
-      if (Values_D4$Type_D4[i] == "NEW_Stom") {
-        PrevID_st <- c(PrevID_st, Values_D4$cellid_D4[i])
-      }
-      if (Values_D4$Type_D4[i] == "Stom") {
-        PrevID_st <- c(PrevID_st, Old_stomata_D4$PrevID_st[j])
-        j <- j + 1
-      }
-    }
-    
-    Values_D4$PrevID_st <- PrevID_st
+    Values_D4$D4_PrevID_st <- D4_PrevID_st
+    attach(Values_D4)
     colnames(Values_D4)
-    OrigID_D4_st <- rep(Values_D4$PrevID_st, Values_D4$areapx_D4)
+    OrigID_D4_st<-rep(Values_D4$D4_PrevID_st,areapx_D4)
     length(OrigID_D4_st)
     
     type_list_D4 <- rep(Values_D4$Type_D4, Values_D4$areapx_D4)
     sorted_All_D4 <- data4_D4()[order(data4_D4()$ids), ]
     sorted_All_D4$Type <- type_list_D4
     sorted_All_D4$OrigID_st <- OrigID_D4_st
-    sorted_All_D4
-    print(sorted_All_D4)
-  }) 
-  
-  test4 <- reactive({
-    req(V_D1(), V_D5(), highlight_D1(), highlight_D5())
-    Values_D1 <- V_D1()
-    Values_D5 <- V_D5()
-    print("this is Values D1:")
-    print(str(Values_D1))
-    print("this is values D5:")
-    print(str(Values_D5))
-    colnames(Values_D1) <- c("cellid_D1","area_D1","CoMX_D1","CoMY_D1","Peri_D1", "areapx_D1", "Circ_D1", "Type_D1")
-    colnames(Values_D5) <- c("cellid_D5","area_D5","CoMX_D5","CoMY_D5","Peri_D5", "areapx_D5", "Circ_D5", "Type_D5")
-    
-    diff_x <- Values_D5[highlight_D5()[1], "CoMX_D5"] - Values_D1[highlight_D1()[1], "CoMX_D1"]
-    diff_y <- Values_D5[highlight_D5()[1], "CoMY_D5"] - Values_D1[highlight_D1()[1], "CoMY_D1"]
-    Values_D5[, "cor_CoMX_D5"] <- Values_D5[, "CoMX_D5"] - diff_x
-    Values_D5[, "cor_CoMY_D5"] <- Values_D5[, "CoMY_D5"] - diff_y
-    
-    side_a <- ((Values_D1[highlight_D1()[3], "CoMX_D1"] - Values_D5[highlight_D5()[3], "cor_CoMX_D5"])^2 + 
-                 (Values_D1[highlight_D1()[3], "CoMY_D1"] - Values_D5[highlight_D5()[3], "cor_CoMY_D5"])^2)^(1/2)
-    side_b <- ((Values_D1[highlight_D1()[1], "CoMX_D1"] - Values_D1[highlight_D1()[3], "CoMX_D1"])^2 + 
-                 (Values_D1[highlight_D1()[1], "CoMY_D1"] - Values_D1[highlight_D1()[3], "CoMY_D1"])^2)^(1/2)
-    side_c <- ((Values_D1[highlight_D1()[1], "CoMX_D1"] - Values_D5[highlight_D5()[3], "cor_CoMX_D5"])^2 + 
-                 (Values_D1[highlight_D1()[1], "CoMY_D1"] - Values_D5[highlight_D5()[3], "cor_CoMY_D5"])^2)^(1/2)
-    cos_alfa <- -(side_a^2 - side_b^2 - side_c^2) / (2 * side_b * side_c)
-    alfa <- acos(cos_alfa)
-    Values_D5[, "cor_CoMX_D5"] <- Values_D5[, "cor_CoMX_D5"] * cos(-alfa) - Values_D5[, "cor_CoMY_D5"] * sin(-alfa)
-    Values_D5[, "cor_CoMY_D5"] <- Values_D5[, "cor_CoMX_D5"] * sin(alfa) + Values_D5[, "cor_CoMY_D5"] * cos(alfa)
-    
-    width_D1 <- Values_D1[highlight_D1()[2], "CoMX_D1"] - Values_D1[highlight_D1()[1], "CoMX_D1"]
-    width_D5 <- Values_D5[highlight_D5()[2], "cor_CoMX_D5"] - Values_D5[highlight_D5()[1], "cor_CoMX_D5"]
-    Values_D5[, "cor_CoMX_D5"] <- (Values_D5[, "cor_CoMX_D5"] * (width_D1 / width_D5)) + 
-      (Values_D5[highlight_D5()[1], "cor_CoMX_D5"] * (width_D1 / width_D5))
-    height_D1 <- Values_D1[highlight_D1()[3], "CoMY_D1"] - Values_D1[highlight_D1()[1], "CoMY_D1"]
-    height_D5 <- Values_D5[highlight_D5()[3], "cor_CoMY_D5"] - Values_D5[highlight_D5()[1], "cor_CoMY_D5"]
-    Values_D5[, "cor_CoMY_D5"] <- Values_D5[, "cor_CoMY_D5"] * (height_D1 / height_D5) + 
-      (Values_D5[highlight_D5()[1], "cor_CoMY_D5"] * (height_D1 / height_D5))
-    
-    # Re-iterate the move only
-    diff_x <- Values_D5[highlight_D5()[1], "cor_CoMX_D5"] - Values_D1[highlight_D1()[1], "CoMX_D1"]
-    diff_y <- Values_D5[highlight_D5()[1], "cor_CoMY_D5"] - Values_D1[highlight_D1()[1], "CoMY_D1"]
-    Values_D5[, "cor_CoMX_D5"] <- Values_D5[, "cor_CoMX_D5"] - diff_x
-    Values_D5[, "cor_CoMY_D5"] <- Values_D5[, "cor_CoMY_D5"] - diff_y
-    
-    # Correction for distortion around the right highlight cell
-    dist_to_right <- ((((Values_D5[, "cor_CoMX_D5"] - Values_D5[highlight_D5()[2], "cor_CoMX_D5"])^2) + 
-                         ((Values_D5[, "cor_CoMY_D5"] - Values_D5[highlight_D5()[2], "cor_CoMY_D5"])^2))^(1/2))
-    dist_to_right <- dist_to_right / max(dist_to_right) + 0.1 # +0.1 is to not have 0 values, important for no error when taking log
-    
-    distortion <- (Values_D5[highlight_D5()[2], "cor_CoMY_D5"] - Values_D1[highlight_D1()[2], "CoMY_D1"]) * 
-      (-log10(dist_to_right))
-    
-    Values_D5[, "cor_CoMY_D5"] <- Values_D5[, "cor_CoMY_D5"] - distortion
-    print("this is another text:")
-    print(str(Values_D5))
-    list(Values_D1 = Values_D1, Values_D5 = Values_D5)
+    # Return both Values_D2 and sorted_All_D2 in a list
+    list(Values_D4 = Values_D4, sorted_All_D4 = sorted_All_D4)
   })
   
-  stomata_test4 <- reactive({
-    req(test3()$Values_D4, test4()$Values_D5, data5_D5())
+  Values_D4 <- reactive({
+    req(stomata_test3())
     
-    Values_D5 <- test4()$Values_D5
-    Values_D4 <- test3()$Values_D4
+    stomata_result <- stomata_test3()
     
-    print("this is Values D5 test: ")
-    print(str(Values_D5))
-    print("This is Values D4 test: ")
-    print(str(Values_D4))
+    print("Resultaat van stomata_test3:")
+    print(str(stomata_result$Values_D4))
     
-    Stomata_D4 <- subset(Values_D4, Values_D4$Type_D4 == "Stom" | Values_D4$Type_D4 == "NEW_Stom")
-    Stomata_D4[Stomata_D4$Type_D4 == "NEW_Stom", "Type_D4"] <- "Stom"
-    Stomata_D5 <- subset(Values_D5, Values_D5$Type_D5 == "Stom")
+    values_D4 <- stomata_result$Values_D4
     
-    # Controleer de structuur van de subsets
-    print("Stomata_D4 test: ")
-    print(str(Stomata_D4))
-    print("Stomata_D5 test: ")
-    print(str(Stomata_D5))
+    print("BOEM BAM THIS IS VALUES-D4: ")
+    print(str(values_D4))
     
-    # Controleren of kolomnamen correct zijn toegewezen
-    colnames(Stomata_D4) <- c("St_cellid_D4","St_area_D4","St_CoMX_D4","St_CoMY_D4","areapx_D4","St_Peri_D4", "Circ_D4", "Type_D4", "St_cor_CoMX_D4","St_cor_CoMY_D4")
-    colnames(Stomata_D5) <- c("St_cellid_D5","St_area_D5","St_old_CoMX_D5", "St_old_CoMY_D5","areapx_D5","St_Peri_D5", "Circ_D5", "Type_D5", "St_cor_CoMX_D5","St_cor_CoMY_D5")
+    return(values_D4)
+  })
+  
+  sorted_All_D4 <- reactive({
+    req(stomata_test3())
     
-    print("Stomata_D4 after column renaming: ")
-    print(str(Stomata_D4))
-    print("Stomata_D5 after column renaming: ")
-    print(str(Stomata_D5))
+    stomata_result <- stomata_test3()
     
-    # Zorg ervoor dat de correcte kolommen gebruikt worden
-    St_cor_CoMX_D4_px <- Stomata_D4$St_cor_CoMX_D4 #* scale_D4
-    St_cor_CoMY_D4_px <- Stomata_D4$St_cor_CoMY_D4 #* scale_D4
-    St_cor_CoMX_D5_px <- Stomata_D5$St_cor_CoMX_D5 #* scale_D5
-    St_cor_CoMY_D5_px <- Stomata_D5$St_cor_CoMY_D5 #* scale_D5
+    print("Resultaat van stomata_test (sorted_All_D4):")
+    print(str(stomata_result$sorted_All_D4))
     
-    St_pos_ch <- c()
-    St_pc <- c()
-    St_scores <- c()
-    St_score <- c()
-    for (j in 1:length(Stomata_D5$St_area_D5)) {
-      for (i in 1:length(Stomata_D4$St_area_D4)) {
-        St_pc <- ((((St_cor_CoMX_D5_px[j] - St_cor_CoMX_D4_px[i]) * 10)^2 + (St_cor_CoMY_D5_px[j] - St_cor_CoMY_D4_px[i])^2)^(1/2))
-        St_pos_ch <- c(St_pos_ch, St_pc)
-        St_score <- St_pc
-        St_scores <- c(St_scores, St_score)
-        St_pc <- c()
-        St_score <- c()
-      }
-    }
+    sorted_all_d4 <- stomata_result$sorted_All_D4
     
-    length(St_scores)
-    St_scoretable <- matrix(St_scores, nrow=length(Stomata_D5$St_cellid_D5), ncol=length(Stomata_D4$St_cellid_D4), byrow=TRUE)
-    View(St_scoretable)
-    St_bestmatch <- apply(St_scoretable, 1, which.min)
-    for (i in 1:length(St_bestmatch)) {
-      Stomata_D5$St_PrevID[i] <- Stomata_D4$St_cellid_D4[St_bestmatch[i]]
-      Stomata_D5$St_score[i] <- min(St_scoretable[i, ])
-    }
+    print("BOEM BAM THIS IS sorted_All_D3: ")
+    print(str(sorted_all_d4))
     
-    
-    PrevID_all_dbl_St <- unique(Stomata_D5[duplicated(Stomata_D5$St_PrevID), "St_PrevID"])
-    length(PrevID_all_dbl_St) # Number of Stomata on D4 that gave rise to more than one Stomata on D5
-    
-    PrevID_dbl_St <- c()
-    dbl_St_id <- c()
-    dbl_St_scores <- c()
-    old_St <- c()
-    new_St <- c()
-    
-    for (i in 1:length(PrevID_all_dbl_St)) {
-      PrevID_dbl_St <- PrevID_all_dbl_St[i]
-      dbl_St_id <- Stomata_D5[Stomata_D5$St_PrevID == PrevID_dbl_St, "St_cellid_D5"]
-      dbl_St_scores <- Stomata_D5[Stomata_D5$St_PrevID == PrevID_dbl_St, "St_score"]
-      
-      # Controleer of dbl_St_scores geen ontbrekende waarden bevat
-      if (all(is.na(dbl_St_scores))) {
-        next
-      }
-      
-      print(dbl_St_scores)
-      old_St <- match(min(dbl_St_scores, na.rm = TRUE), dbl_St_scores)
-      for (j in 1:length(dbl_St_id)) {
-        if (j != old_St) {
-          new_St <- dbl_St_id[j]
-          print(new_St)
-          Values_D5[Values_D5$cellid_D5 == new_St, "Type_D5"] <- "NEW_Stom"
-        }
-      }
-    }
-    
-    PrevID_st <- c()
-    j <- 1
-    for (i in 1:length(Values_D5$cellid_D5)) {
-      if (Values_D5$Type_D5[i] == "PC" | Values_D5$Type_D5[i] == "Highlight") {
-        PrevID_st <- c(PrevID_st, 1)
-      }
-      if (Values_D5$Type_D5[i] == "Stom" | Values_D5$Type_D5[i] == "NEW_Stom") {
-        PrevID_st <- c(PrevID_st, Stomata_D5$St_PrevID[j])
-        j <- j + 1
-      }
-    }
-    
-    Values_D5$PrevID_st <- PrevID_st
-    colnames(Values_D5)
-    OrigID_D5_st <- rep(Values_D5$PrevID_st, Values_D5$areapx_D5)
-    length(OrigID_D5_st)
-    
-    type_list_D5 <- rep(Values_D5$Type_D5, Values_D5$areapx_D5)
-    sorted_All_D5 <- data5_D5()[order(data5_D5()$ids), ]
-    sorted_All_D5$Type <- type_list_D5
-    sorted_All_D5$OrigID_st <- OrigID_D5_st
-    sorted_All_D5
-    print(sorted_All_D5)
+    return(sorted_all_d4)
   })
   
   cols <- c("Stom" = "chocolate3", "PC" = "aquamarine4", "NEW_Stom" = "black", "Highlight" = "white")
@@ -1865,7 +1786,7 @@ server <- function(input, output, session) {
     plot
   })
   output$BAM2 <- renderPlot({
-    sorted_result <- stomata_test()
+    sorted_result <- sorted_All_D2()
     plot <- ggplot(sorted_result, aes(x = Xcoord, y = InvY, colour = Type_D2)) +
       geom_point(size = 0.1) +
       scale_color_manual(values = cols) +
@@ -1876,7 +1797,7 @@ server <- function(input, output, session) {
     plot
   })
   output$BAM3 <- renderPlot({
-    sorted_result <- stomata_test2()
+    sorted_result <- sorted_All_D3()
     plot<-ggplot(sorted_result, aes(x = Xcoord, y = InvY, colour = Type)) +
       geom_point(size = 0.1) +
       scale_color_manual(values = cols)+
@@ -1887,24 +1808,13 @@ server <- function(input, output, session) {
     plot
   })
   output$BAM4 <- renderPlot({
-    sorted_result <- stomata_test3()
+    sorted_result <- sorted_All_D4()
     plot<-ggplot(sorted_result, aes(x = Xcoord, y = InvY, colour = Type)) +
       geom_point(size = 0.1) +
       scale_color_manual(values = cols)+
       theme(panel.background = element_rect(fill = "gray27")) +
       theme(panel.grid = element_blank(), legend.position = "none") +
       ggtitle("Day 4") +
-      theme(plot.title = element_text(hjust = 0.5))
-    plot
-  })
-  output$BAM5 <- renderPlot({
-    sorted_result <- stomata_test4()
-    plot<-ggplot(sorted_result, aes(x = Xcoord, y = InvY, colour = Type)) +
-      geom_point(size = 0.1) +
-      scale_color_manual(values = cols)+
-      theme(panel.background = element_rect(fill = "gray27")) +
-      theme(panel.grid = element_blank(), legend.position = "none") +
-      ggtitle("Day 5") +
       theme(plot.title = element_text(hjust = 0.5))
     plot
   })
@@ -1932,7 +1842,7 @@ server <- function(input, output, session) {
     print(D1)
   })
   output$BOEM2 <- renderPlot({
-    sorted <- stomata_test()
+    sorted <- sorted_All_D2()
     D2 <- ggplot(sorted, aes(x = Xcoord, y = InvY, colour = as.factor(OrigID_st), alpha = Type_D2)) +
       geom_point(size = 0.1) +
       scale_color_manual(values = colss) +
@@ -1944,7 +1854,7 @@ server <- function(input, output, session) {
     plot(D2)
   })
   output$BOEM3 <- renderPlot({
-    sorted_All_D3 <- stomata_test2()
+    sorted_All_D3 <- sorted_All_D3()
     D3 <- ggplot(sorted_All_D3, aes(x = Xcoord, y = InvY, colour = as.factor(OrigID_st), alpha = Type)) +
       geom_point(size = 0.1) +
       scale_color_manual(values = colss) +
@@ -1956,7 +1866,7 @@ server <- function(input, output, session) {
     plot(D3)
   })
   output$BOEM4 <- renderPlot({
-    sorted_All_D4 <- stomata_test3()
+    sorted_All_D4 <- sorted_All_D4()
     D4 <- ggplot(sorted_All_D4, aes(x = Xcoord, y = InvY, colour = as.factor(OrigID_st), alpha = Type)) +
       geom_point(size = 0.1) +
       scale_color_manual(values = colss) +
@@ -1967,21 +1877,9 @@ server <- function(input, output, session) {
       theme(plot.title = element_text(hjust = 0.5))
     plot(D4)
   })
-  output$BOEM5 <- renderPlot({
-    sorted_All_D5 <- stomata_test4()
-    D5 <- ggplot(sorted_All_D5, aes(x = Xcoord, y = InvY, colour = as.factor(OrigID_st), alpha = Type)) +
-      geom_point(size = 0.1) +
-      scale_color_manual(values = colss) +
-      scale_alpha_manual(values = alphas) +
-      theme(panel.background = element_rect(fill = "gray27")) +
-      theme(panel.grid = element_blank(), legend.position = "none") +
-      ggtitle("Day 5") +
-      theme(plot.title = element_text(hjust = 0.5))
-    plot(D5)
-  })
+  
   ######################################
   ## D3
   ######################################
 }
 shinyApp(ui = ui, server = server)
-
