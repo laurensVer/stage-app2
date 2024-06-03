@@ -344,15 +344,13 @@ ui <- dashboardPage(
       ),
       tabItem(tabName = "PC",
               mainPanel(
-                div(style = "overflow-x: auto; white-space: nowrap; width: 150%;",
-                    div(style = "display: inline-block; width: 33%;", plotOutput("PC1")),
-                    div(style = "display: inline-block; width: 33%;", plotOutput("PC2")),
-                    div(style = "display: inline-block; width: 33%;", plotOutput("PC3")),
+                div(style = "overflow-x: auto; white-space: nowrap; width: 150%; display: grid; grid-template-columns: 1fr 1fr 1fr; grid-gap: 20px;",
+                    div(style = "width: 100%;", plotOutput("PC1")),
+                    div(style = "width: 100%;", plotOutput("PC2")),
+                    div(style = "width: 100%;", plotOutput("PC3")),
                 ),
-                div(style = "overflow-x: auto; white-space: nowrap; width: 150%;",
-                    div(style = "display: inline-block; width: 33%;", plotOutput("PC1.1")),
-                    div(style = "display: inline-block; width: 33%;", plotOutput("PC2.1"))
-                    
+                div(style = "overflow-x: auto; white-space: nowrap; width: 150%; margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; grid-gap: 20px;",
+                    div(style = "width: 90%; margin-top: 20px; margin-left: 65px;", plotOutput("PC1.1"))
                 )
               )
       )
@@ -1959,16 +1957,27 @@ server <- function(input, output, session) {
       Values_D2$D2_PrevID[i] <- V_D1$cellid_D1[bestmatch[i]]
     }
     Values_D2
+    
+    bestvalue<-c()
+    lowvalues<-c()
+    for (i in 1:nrow(scoretable)){
+      bestvalue<-scoretable[i,bestmatch[i]]
+      lowvalues<-c(lowvalues,bestvalue)
+    }
+    worse<-max(lowvalues)
+    inv_lowvalues<-(worse-lowvalues)
+    confidence <- rep(inv_lowvalues,Values_D2$areapx_D2)
     # Plot based on original cell number
     OrigID_D2 <- rep(Values_D2$D2_PrevID, Values_D2$areapx_D2)
     sorted_All_D2 <- sorted_All_D2()
     sorted_All_D2$OrigID <- OrigID_D2
+    sorted_All_D2$confidence<- confidence
     
     sorted_All_D2
   })
   ### Values_D2 en D3
   tracking1 <- reactive({
-    req(V_D3(), V_D2(), Values_D3(),sorted_All_D3())
+    req(V_D3(), V_D2(), Values_D2(), Values_D3(), sorted_All_D3())
     
     V_D3 <- V_D3()
     V_D2 <- V_D2()
@@ -1981,6 +1990,7 @@ server <- function(input, output, session) {
     print("this is V_D2: ")
     print(str(V_D2))
     
+    Values_D2 <- Values_D2()
     Values_D3 <- Values_D3()
     print("this is Values_D3: ")
     print(str(Values_D3))
@@ -1988,8 +1998,8 @@ server <- function(input, output, session) {
     av_area_inc <- (mean(V_D3$area_D3) / mean(V_D2$area_D2))
     av_peri_inc <- (mean(V_D3$Peri_D3) / mean(V_D2$Peri_D2))
     
-    CoMX_D2_px <- V_D2$CoMX_D2
-    CoMY_D2_px <- V_D2$CoMY_D2
+    CoMX_D2_px <- Values_D2$cor_CoMX_D2
+    CoMY_D2_px <- Values_D2$cor_CoMY_D2
     CoMX_D3_px <- Values_D3$cor_CoMX_D3
     CoMY_D3_px <- Values_D3$cor_CoMY_D3
     av_pc <- ((((mean(CoMX_D3_px) - mean(CoMX_D2_px))^2) + ((mean(CoMY_D3_px) - mean(CoMY_D2_px))^2))^(1/2))
@@ -2032,11 +2042,13 @@ server <- function(input, output, session) {
       Values_D3$D3_PrevID[i] <- V_D2$cellid_D2[bestmatch[i]]
     }
     Values_D3
+    
     # Plot based on original cell number
     OrigID_D3 <- rep(Values_D3$D3_PrevID, Values_D3$areapx_D3)
     sorted_All_D3 <- sorted_All_D3()
     sorted_All_D3$OrigID <- OrigID_D3
-    
+    print("this is sorted_All_D3: ")
+    print(str(sorted_All_D3))
     sorted_All_D3
   })
   
@@ -2072,12 +2084,38 @@ server <- function(input, output, session) {
   })
   output$PC3 <- renderPlot({
     test_result <- tracking1()
-    plot <- ggplot(test_result, aes(x = Xcoord, y = InvY, colour = as.factor(OrigID), alpha =Type_D3)) +
+    
+    # Debugging the test_result
+    print("test_result:")
+    print(str(test_result))
+    
+    # Ensure the 'Type' column exists and has correct length
+    if (!"Type" %in% colnames(test_result)) {
+      stop("Column 'Type' not found in test_result")
+    }
+    
+    if (length(test_result$Type) != nrow(test_result)) {
+      stop("Length of 'Type' column does not match number of rows in test_result")
+    }
+    
+    plot <- ggplot(test_result, aes(x = Xcoord, y = InvY, colour = as.factor(OrigID), alpha = Type)) +
       geom_point(size = 0.1) +
-      scale_color_manual(values = colsss)+
-      scale_alpha_manual(values = alphasss)+
+      scale_color_manual(values = colsss) +
+      scale_alpha_manual(values = alphasss) +
       theme(panel.background = element_rect(fill = "gray27")) +
       theme(panel.grid = element_blank(), legend.position = "none")
+    plot
+  })
+  
+  output$PC1.1 <- renderPlot({
+    test_result <- tracking()
+    plot <- ggplot(test_result, aes(x = Xcoord, y = InvY, colour = confidence, alpha=Type_D2)) +
+      geom_point(size = 0.1) +
+      #geom_text(label=numberlabel_D2, colour="black", size=1.5)+
+      scale_alpha_manual(values = alphasss)+
+      scale_colour_gradient2(low = "red", mid = "grey94", midpoint = mean(inv_lowvalues), high = "grey94")+
+      theme(panel.background = element_rect(fill = "gray27")) +
+      theme(panel.grid = element_blank(), legend.position = "none", axis.title = element_blank())
     plot
   })
   
