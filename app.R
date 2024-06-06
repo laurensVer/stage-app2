@@ -237,7 +237,8 @@ ui <- dashboardPage(
                   fileInput("values_D2_file", "Upload the D2 file"),
                   fileInput("values_D3_file", "Upload the D3 file"),
                   fileInput("values_D4_file", "Upload the D4 file"),
-                  fileInput("values_D5_file", "Upload the D5 file")
+                  fileInput("values_D5_file", "Upload the D5 file"),
+                  div(style = "margin-top: 20px;", actionButton("refresh_btn", "Refresh")),
                 ),
                 mainPanel(
                   tabsetPanel(
@@ -320,7 +321,7 @@ ui <- dashboardPage(
                     div(style = "float: left; width: 33%;", plotOutput("D3_plot")),
                     div(style = "float: left; width: 33%;", plotOutput("D4_plot")),
                     div(style = "float: left; width: 33%;", plotOutput("D5_plot"))
-                )
+                ),
               )
       ),
       tabItem(tabName = "test",
@@ -342,16 +343,19 @@ ui <- dashboardPage(
       ),
       tabItem(tabName = "PC",
               mainPanel(
-                div(style = "overflow-x: auto; white-space: nowrap; width: 150%; display: grid; grid-template-columns: 1fr 1fr 1fr; grid-gap: 20px;",
+                div(
+                  style = "overflow-x: scroll; white-space: nowrap; width: 150%; display: grid; grid-template-columns: repeat(4, 1fr); grid-gap: 20px;",
                     div(style = "width: 100%;", plotOutput("PC1")),
                     div(style = "width: 100%;", plotOutput("PC2")),
                     div(style = "width: 100%;", plotOutput("PC3")),
+                    div(style = "width: 100%;", plotOutput("PC4")),
                 ),
-                div(style = "overflow-x: auto; white-space: nowrap; width: 200%; margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; grid-gap: 20px;",
+                div(
+                  style = "overflow-x: scroll; white-space: nowrap; width: 150%; margin-top: 10px; display: grid; grid-template-columns: repeat(3, 1fr); grid-gap: 20px;",
                     div(style = "width: 90%; margin-top: 20px; margin-left: 65px;", plotOutput("PC1.1")),
-                    div(style = "width: 90%; margin-top: 20px; margin-left: 65px;", plotOutput("PC1.2"))
-                    
-                )
+                    div(style = "width: 90%; margin-top: 20px; margin-left: 65px;", plotOutput("PC1.2")),
+                    div(style = "width: 90%; margin-top: 20px; margin-left: 65px;", plotOutput("PC1.3")),
+                  )
               )
       )
     )
@@ -772,6 +776,10 @@ server <- function(input, output, session) {
       showModalFunction()
       showModalDialog(TRUE)
     }
+  })
+  
+  observeEvent(input$refresh_btn, {
+    session$reload()
   })
   # Observer for the button to return to the landing page
   observeEvent(input$returnToLanding, {
@@ -2156,6 +2164,131 @@ server <- function(input, output, session) {
     return(sorted_all_d3)
   })
   
+  ### Values_D3 en D3
+  tracking2 <- reactive({
+    req(V_D3(), V_D4(),tracking_Values_D2() ,tracking_Values_D3(), Values_D4(), sorted_All_D4())
+    
+    # Haal de waarden op uit de reactive functies
+    V_D3 <- V_D3()
+    V_D4 <- V_D4()
+    Values_D2 <- tracking_Values_D2()
+    Values_D3 <- tracking_Values_D3()
+    Values_D4 <- Values_D4()
+    sorted_All_D4 <- sorted_All_D4()
+    
+    # Voeg kolomnamen toe aan de datasets
+    colnames(V_D3) <- c("cellid_D3", "area_D3", "CoMX_D3", "CoMY_D3", "Peri_D3", "areapx_D3", "Circ_D3", "Type_D3")
+    colnames(V_D4) <- c("cellid_D4", "area_D4", "CoMX_D4", "CoMY_D4", "Peri_D4", "areapx_D4", "Circ_D4", "Type_D4")
+    
+    # Debug prints om de structuren van de datasets te controleren
+    print("this is V_D3: ")
+    print(str(V_D3))
+    
+    print("this is V_D4: ")
+    print(str(V_D4))
+    
+    print("Kijken of dit wel klopt: ")
+    print(str(Values_D3))
+    
+    print("this is Values_D4: ")
+    print(str(Values_D4))
+    
+    # Bereken gemiddelde area en perimeter toename
+    av_area_inc <- mean(V_D4$area_D4) / mean(V_D3$area_D3)
+    av_peri_inc <- mean(V_D4$Peri_D4) / mean(V_D3$Peri_D3)
+    
+    # Haal de gecorrigeerde coördinaten op
+    CoMX_D3_px <- Values_D3$cor_CoMX_D3
+    CoMY_D3_px <- Values_D3$cor_CoMY_D3
+    CoMX_D4_px <- Values_D4$cor_CoMX_D4
+    CoMY_D4_px <- Values_D4$cor_CoMY_D4
+    av_pc <- sqrt((mean(CoMX_D4_px) - mean(CoMX_D3_px))^2 + (mean(CoMY_D4_px) - mean(CoMY_D3_px))^2)
+    
+    scores <- c()
+    
+    # Bereken de scores tussen de cellen
+    for (j in 1:length(V_D4$area_D4)) {
+      for (i in 1:length(V_D3$area_D3)) {
+        ar <- abs(1 - (V_D4$area_D4[j] / V_D3$area_D3[i]) / av_area_inc)
+        pc <- sqrt((CoMX_D4_px[j] - CoMX_D3_px[i])^2 + (CoMY_D4_px[j] - CoMY_D3_px[i])^2)
+        score <- pc + 5 * ar
+        scores <- c(scores, score)
+      }
+      if (j %in% c(10, 20, 30, 40, 50, 100, 200, 300, 400, 500)) {
+        print(j)
+      }
+    }
+    
+    # Maak een scoretabel en zoek de beste matches
+    scoretable <- matrix(scores, nrow = length(V_D4$cellid_D4), ncol = length(V_D3$cellid_D3), byrow = TRUE)
+    bestmatch <- apply(scoretable, 1, which.min)
+    for (i in 1:length(bestmatch)) {
+      Values_D4$D4_PrevID[i] <- V_D3$cellid_D3[bestmatch[i]]
+    }
+    print(head(Values_D4))
+    
+    # Update PC_color kolom
+    cellnrD4 <- c()
+    PC_color <- c()
+    for (j in 1:length(Values_D4$D4_PrevID)) {
+      cellnrD4 <- Values_D4$cellid_D4[j]
+      PC_color <- c(PC_color, Values_D2$D2_PrevID[Values_D3$D3_PrevID[Values_D4$D4_PrevID[cellnrD4]]])
+    }
+    Values_D4$D4_PC_color <- PC_color
+    print(head(Values_D4))
+    
+    # Bereken confidence score
+    bestvalue <- c()
+    lowvalues <- c()
+    for (i in 1:nrow(scoretable)) {
+      bestvalue <- scoretable[i, bestmatch[i]]
+      lowvalues <- c(lowvalues, bestvalue)
+    }
+    worse <- max(lowvalues)
+    inv_lowvalues <- (worse - lowvalues)
+    confidence <- rep(inv_lowvalues, Values_D4$areapx_D4)
+    
+    OrigID_D4 <- rep(Values_D4$D4_PC_color, V_D4$areapx_D4)
+    sorted_All_D4$OrigID <- OrigID_D4
+    sorted_All_D4$confidence <- confidence
+    print("this is sorted_All_D4: ")
+    print(str(sorted_All_D4))
+    
+    list(sorted_All_D4 = sorted_All_D4, Values_D4 = Values_D4)
+  })
+  
+  tracking_Values_D4 <- reactive({
+    req(tracking2())
+    
+    PC_result <- tracking2()
+    
+    print("Resultaat van tracking2:")
+    print(str(PC_result$Values_D4))
+    
+    values_D4 <- PC_result$Values_D4
+    
+    print("BOEM BAM THIS IS VALUES-D4: ")
+    print(str(values_D4))
+    
+    return(values_D4)
+  })
+  
+  tracking_sorted_All_D4 <- reactive({
+    req(tracking2())
+    
+    PC_result <- tracking2()
+    
+    print("Resultaat van PC_result (sorted_All_D4):")
+    print(str(PC_result$sorted_All_D4))
+    
+    sorted_all_d4 <- PC_result$sorted_All_D4
+    
+    print("BOEM BAM THIS IS sorted_All_D3: ")
+    print(str(sorted_all_d4))
+    
+    return(sorted_all_d4)
+  })
+  
   
   alphasss<-c("Stom"=0, "PC"=1, "NEW_Stom"=1, "Highlight"=1)
   colsss<-c("1" =  "black","2" =  "antiquewhite2","3" =  "aquamarine","4" =  "aquamarine3","5" =  "azure1","6" =  "azure4","7" =  "bisque1","8" =  "bisque4","9" =  "blue","10" =  "blue3","11" =  "brown","12" =  "brown3","13" =  "burlywood1","14" =  "burlywood4","15" =  "cadetblue2","16" =  "chartreuse","17" =  "chartreuse3","18" =  "chocolate1","19" =  "chocolate4","20" =  "coral2","21" =  "cornflowerblue","22" =  "cornsilk2","23" =  "cyan","24" =  "cyan3","25" =  "darkcyan","26" =  "darkgoldenrod2","27" =  "darkgray","28" =  "darkkhaki","29" =  "darkolivegreen1","30" =  "darkolivegreen4","31" =  "darkorange2","32" =  "darkorchid","33" =  "darkorchid3","34" =  "darksalmon","35" =  "darkseagreen2","36" =  "darkslateblue","37" =  "darkslategray2","38" =  "darkslategrey","39" =  "deeppink","40" =  "deeppink3","41" =  "deepskyblue1","42" =  "deepskyblue4","43" =  "dodgerblue","44" =  "dodgerblue3","45" =  "firebrick1","46" =  "firebrick4","47" =  "gainsboro","48" =  "gold1","49" =  "gold4","50" =  "goldenrod2","51" =  "gray","52" =  "gray17","53" =  "gray35","54" =  "gray53","55" =  "gray71","56" =  "gray92","57" =  "green","58" =  "green3","59" =  "honeydew","60" =  "honeydew3","61" =  "hotpink1","62" =  "hotpink4","63" =  "indianred2","64" =  "ivory","65" =  "ivory3","66" =  "khaki1","67" =  "khaki4","68" =  "lavenderblush1","69" =  "lavenderblush4","70" =  "lemonchiffon1","71" =  "lemonchiffon4","72" =  "lightblue2","73" =  "lightcoral","74" =  "lightcyan2","75" =  "lightgoldenrod","76" =  "lightgoldenrod3","77" =  "lightgray","78" =  "lightpink","79" =  "lightpink3","80" =  "lightsalmon1","81" =  "lightsalmon4","82" =  "lightskyblue1","83" =  "lightskyblue4","84" =  "lightslategrey","85" =  "lightsteelblue2","86" =  "lightyellow","87" =  "lightyellow3","88" =  "linen","89" =  "magenta2","90" =  "maroon","91" =  "maroon3","92" =  "mediumblue","93" =  "mediumorchid2","94" =  "mediumpurple","95" =  "mediumpurple3","96" =  "mediumslateblue","97" =  "mediumvioletred","98" =  "mistyrose","99" =  "mistyrose3","100" =  "navajowhite","101" =  "navajowhite3","102" =  "navyblue","103" =  "olivedrab1","104" =  "olivedrab4","105" =  "orange2","106" =  "orangered","107" =  "orangered3","108" =  "orchid1","109" =  "orchid4","110" =  "palegreen1","111" =  "palegreen4","112" =  "paleturquoise2","113" =  "palevioletred","114" =  "palevioletred3","115" =  "peachpuff","116" =  "peachpuff3","117" =  "pink","118" =  "pink3","119" =  "plum1","120" =  "plum4","121" =  "purple1","122" =  "purple4","123" =  "red2","124" =  "rosybrown","125" =  "rosybrown3","126" =  "royalblue1","127" =  "royalblue4","128" =  "salmon1","129" =  "salmon4","130" =  "seagreen1","131" =  "seagreen4","132" =  "seashell2","133" =  "sienna","134" =  "sienna3","135" =  "skyblue1","136" =  "skyblue4","137" =  "slateblue2","138" =  "slategray","139" =  "slategray3","140" =  "snow","141" =  "snow3","142" =  "springgreen1","143" =  "springgreen4","144" =  "steelblue2","145" =  "tan","146" =  "tan3","147" =  "thistle1","148" =  "thistle4","149" =  "tomato2","150" =  "turquoise","151" =  "turquoise3","152" =  "violetred","153" =  "violetred3","154" =  "wheat1","155" =  "wheat4","156" =  "yellow1","157" =  "yellow4","158" =  "aliceblue","159" =  "antiquewhite2","160" =  "aquamarine","161" =  "aquamarine3","162" =  "azure1","163" =  "azure4","164" =  "bisque1","165" =  "bisque4","166" =  "blue","167" =  "blue3","168" =  "brown","169" =  "brown3","170" =  "burlywood1","171" =  "burlywood4","172" =  "cadetblue2","173" =  "chartreuse","174" =  "chartreuse3","175" =  "chocolate1","176" =  "chocolate4","177" =  "coral2","178" =  "cornflowerblue","179" =  "cornsilk2","180" =  "cyan","181" =  "cyan3","182" =  "darkcyan","183" =  "darkgoldenrod2","184" =  "darkgray","185" =  "darkkhaki","186" =  "darkolivegreen1","187" =  "darkolivegreen4","188" =  "darkorange2","189" =  "darkorchid","190" =  "darkorchid3","191" =  "darksalmon","192" =  "darkseagreen2","193" =  "darkslateblue",
@@ -2189,8 +2322,17 @@ server <- function(input, output, session) {
   })
   output$PC3 <- renderPlot({
     test_result <- tracking_sorted_All_D3()
-    
-  plot <- ggplot(test_result, aes(x = Xcoord, y = InvY, colour = as.factor(OrigID), alpha = Type)) +
+   plot <- ggplot(test_result, aes(x = Xcoord, y = InvY, colour = as.factor(OrigID), alpha = Type)) +
+      geom_point(size = 0.1) +
+      scale_color_manual(values = colsss) +
+      scale_alpha_manual(values = alphasss) +
+      theme(panel.background = element_rect(fill = "gray27")) +
+      theme(panel.grid = element_blank(), legend.position = "none")
+    plot
+  })
+  output$PC4 <- renderPlot({
+    test_result <- tracking_sorted_All_D4()
+    plot <- ggplot(test_result, aes(x = Xcoord, y = InvY, colour = as.factor(OrigID), alpha = Type)) +
       geom_point(size = 0.1) +
       scale_color_manual(values = colsss) +
       scale_alpha_manual(values = alphasss) +
@@ -2211,6 +2353,16 @@ server <- function(input, output, session) {
   })
   output$PC1.2 <- renderPlot({
     tracking <- tracking_sorted_All_D3()
+    plot <- ggplot(tracking, aes(x = Xcoord, y = InvY, colour = confidence, alpha=Type)) +
+      geom_point(size = 0.1) +
+      scale_alpha_manual(values = alphasss)+
+      scale_colour_gradient2(low = "red", mid = "grey94", midpoint = mean(inv_lowvalues), high = "grey94")+
+      theme(panel.background = element_rect(fill = "gray27")) +
+      theme(panel.grid = element_blank(), legend.position = "none", axis.title = element_blank())
+    plot
+  })
+  output$PC1.3 <- renderPlot({
+    tracking <- tracking_sorted_All_D4()
     plot <- ggplot(tracking, aes(x = Xcoord, y = InvY, colour = confidence, alpha=Type)) +
       geom_point(size = 0.1) +
       scale_alpha_manual(values = alphasss)+
