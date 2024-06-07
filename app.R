@@ -231,6 +231,7 @@ ui <- dashboardPage(
       ),
       tabItem(tabName = "upload_files",
               h1("Upload corrected Values files for cell tracking"),
+              
               sidebarLayout(
                 sidebarPanel(
                   fileInput("values_D1_file", "Upload the D1 file"),
@@ -326,29 +327,32 @@ ui <- dashboardPage(
       ),
       tabItem(tabName = "test",
               h1("Stomata tracking"),
-              p("The upper row of graphs indicate new stomata (black) at each time point."),
+              p("The upper row of graphs indicate new stomata (olive green) at each time point."),
               p("The lower row indicates corresponding stomata in the same color, new stomata appear in other colors."),
               mainPanel(
-                div(style = "overflow-x: auto; white-space: nowrap; width: 150%;",
-                    div(style = "float: left; width: 33%;", plotOutput("BAM")),
-                    div(style = "float: left; width: 33%;", plotOutput("BAM2")),
-                    div(style = "float: left; width: 33%;", plotOutput("BAM3"))
+                div(style = "overflow-x: scroll; white-space: nowrap; width: 150%; display: grid; grid-template-columns: repeat(4, 1fr); grid-gap: 20px;",
+                    div(style = "float: left; width: 120%;", plotOutput("BAM")),
+                    div(style = "float: left; width: 120%;", plotOutput("BAM2")),
+                    div(style = "float: left; width: 120%;", plotOutput("BAM3")),
+                    div(style = "float: left; width: 120%;", plotOutput("BAM4")),
                 ),
-                div(style = "overflow-x: auto; white-space: nowrap; width: 150%;",
-                    div(style = "float: left; width: 33%;", plotOutput("BOEM1")),
-                    div(style = "float: left; width: 33%;", plotOutput("BOEM2")),
-                    div(style = "float: left; width: 33%;", plotOutput("BOEM3"))
-                )
+                div(style = "overflow-x: scroll; white-space: nowrap; width: 150%; display: grid; grid-template-columns: repeat(4, 1fr); grid-gap: 20px;",
+                    div(style = "float: left; width: 120%;", plotOutput("BOEM1")),
+                    div(style = "float: left; width: 120%;", plotOutput("BOEM2")),
+                    div(style = "float: left; width: 120%;", plotOutput("BOEM3")),
+                    div(style = "float: left; width: 120%;", plotOutput("BOEM4"))
+                    
+                  )
               )
       ),
       tabItem(tabName = "PC",
               mainPanel(
                 div(
                   style = "overflow-x: scroll; white-space: nowrap; width: 150%; display: grid; grid-template-columns: repeat(4, 1fr); grid-gap: 20px;",
-                    div(style = "width: 100%;", plotOutput("PC1")),
-                    div(style = "width: 100%;", plotOutput("PC2")),
-                    div(style = "width: 100%;", plotOutput("PC3")),
-                    div(style = "width: 100%;", plotOutput("PC4")),
+                    div(style = "width: 120%;", plotOutput("PC1")),
+                    div(style = "width: 120%;", plotOutput("PC2")),
+                    div(style = "width: 120%;", plotOutput("PC3")),
+                    div(style = "width: 120%;", plotOutput("PC4")),
                 ),
                 div(
                   style = "overflow-x: scroll; white-space: nowrap; width: 150%; margin-top: 10px; display: grid; grid-template-columns: repeat(3, 1fr); grid-gap: 20px;",
@@ -778,223 +782,226 @@ server <- function(input, output, session) {
     }
   })
   
-  observeEvent(input$refresh_btn, {
-    session$reload()
-  })
   # Observer for the button to return to the landing page
   observeEvent(input$returnToLanding, {
     showModalDialog(FALSE)  # Set modal dialog status to FALSE
     showModalFunction()  # Show modal dialog
   })
-  
-  # Lees waardenbestanden in voor elk submenu-item
-  values_D1 <- reactive({
-    req(input$values_D1_file)
-    read.csv(input$values_D1_file$datapath)
-  })
-  
-  values_D2 <- reactive({
-    req(input$values_D2_file)
-    read.csv(input$values_D2_file$datapath)
-  })
-  
-  values_D3 <- reactive({
-    req(input$values_D3_file)
-    read.csv(input$values_D3_file$datapath)
-  })
-  
-  values_D4 <- reactive({
-    req(input$values_D4_file)
-    read.csv(input$values_D4_file$datapath)
-  })
-  
-  values_D5 <- reactive({
-    req(input$values_D5_file)
-    read.csv(input$values_D5_file$datapath)
-  })
-  
-  # Toon waardentabellen voor elk submenu-item
-  output$D1_table <- renderTable({
-    req(values_D1())
-    values_D1()
-  })
-  
-  output$D2_table <- renderTable({
-    req(values_D2())
-    values_D2()
-  })
-  
-  output$D3_table <- renderTable({
-    req(values_D3())
-    values_D3()
-  })
-  
-  output$D4_table <- renderTable({
-    req(values_D4())
-    values_D4()
-  })
-  
-  output$D5_table <- renderTable({
-    req(values_D5())
-    values_D5()
-  })
-  ###########################################################
-  ## calculations ##
-  ###########################################################
-  # Initialize the calculations list
-  calculations_list <- reactiveVal(list())
-  
-  # Perform calculations when a file is uploaded
-  observeEvent(input$values_D1_file, {
-    if (!is.null(input$values_D1_file)) {
-      values_D1 <- read.csv(input$values_D1_file$datapath)
-      nrPC_D1 <- length(which(values_D1$Type == "PC" & values_D1$area > 25))
-      nrSt_D1 <- length(which(values_D1$Type == "Stom"))
-      SI_D1 <- nrSt_D1 / (nrPC_D1 + nrSt_D1)
-      SD_D1 <- nrSt_D1 / sum(values_D1$area)
-      calculations_list( c(calculations_list(), list(D1 = c(nrPC_D1 + nrSt_D1, nrPC_D1, nrSt_D1, SI_D1, SD_D1))) )
-    }
-  })
-  
-  # Perform calculations for D2 similarly
-  observeEvent(input$values_D2_file, {
-    if (!is.null(input$values_D2_file)) {
-      values_D2 <- read.csv(input$values_D2_file$datapath)
-      nrPC_D2 <- length(which(values_D2$Type == "PC" & values_D2$area > 25))
-      nrSt_D2 <- length(which(values_D2$Type == "Stom"))
-      SI_D2 <- nrSt_D2 / (nrPC_D2 + nrSt_D2)
-      SD_D2 <- nrSt_D2 / sum(values_D2$area)
-      calculations_list( c(calculations_list(), list(D2 = c(nrPC_D2 + nrSt_D2, nrPC_D2, nrSt_D2, SI_D2, SD_D2))) )
-    }
-  })
-  
-  # Perform calculations for D3 similarly
-  observeEvent(input$values_D3_file, {
-    if (!is.null(input$values_D3_file)) {
-      values_D3 <- read.csv(input$values_D3_file$datapath)
-      nrPC_D3 <- length(which(values_D3$Type == "PC" & values_D3$area > 25))
-      nrSt_D3 <- length(which(values_D3$Type == "Stom"))
-      SI_D3 <- nrSt_D3 / (nrPC_D3 + nrSt_D3)
-      SD_D3 <- nrSt_D3 / sum(values_D3$area)
-      calculations_list( c(calculations_list(), list(D3 = c(nrPC_D3 + nrSt_D3, nrPC_D3, nrSt_D3, SI_D3, SD_D3))) )
-    }
-  })
-  
-  # Perform calculations for D4 similarly
-  observeEvent(input$values_D4_file, {
-    if (!is.null(input$values_D4_file)) {
-      values_D4 <- read.csv(input$values_D4_file$datapath)
-      nrPC_D4 <- length(which(values_D4$Type == "PC" & values_D4$area > 25))
-      nrSt_D4 <- length(which(values_D4$Type == "Stom"))
-      SI_D4 <- nrSt_D4 / (nrPC_D4 + nrSt_D4)
-      SD_D4 <- nrSt_D4 / sum(values_D4$area)
-      calculations_list( c(calculations_list(), list(D4 = c(nrPC_D4 + nrSt_D4, nrPC_D4, nrSt_D4, SI_D4, SD_D4))) )
-    }
-  })
-  
-  # Perform calculations for D5 similarly
-  observeEvent(input$values_D5_file, {
-    if (!is.null(input$values_D5_file)) {
-      values_D5 <- read.csv(input$values_D5_file$datapath)
-      nrPC_D5 <- length(which(values_D5$Type == "PC" & values_D5$area > 25))
-      nrSt_D5 <- length(which(values_D5$Type == "Stom"))
-      SI_D5 <- nrSt_D5 / (nrPC_D5 + nrSt_D5)
-      SD_D5 <- nrSt_D5 / sum(values_D5$area)
-      calculations_list( c(calculations_list(), list(D5 = c(nrPC_D5 + nrSt_D5, nrPC_D5, nrSt_D5, SI_D5, SD_D5))) )
-    }
-  })
-  
-  # Combine all calculations into a matrix
-  combined_calculations <- reactive({
-    result <- matrix(NA, nrow = 5, ncol = length(calculations_list()))
-    rownames(result) <- c("Total", "nr_PC", "nr_Stom", "SI", "SD")
-    for (i in seq_along(calculations_list())) {
-      result[, i] <- calculations_list()[[i]]
-    }
-    colnames(result) <- names(calculations_list())
-    result
-  })
-  
-  # Show the matrix in the UI
-  output$cell_param_table <- renderDataTable({
-    combined_calculations()
-  })
-  # Download handler
-  output$download_data <- downloadHandler(
-    filename = function() {
-      paste("cell_param_table.csv", sep = "")
-    },
-    content = function(file) {
-      write.csv(combined_calculations(), file, row.names = TRUE)
-    }
-  )
-  output$plot1 <- renderPlot({
-    # Definieer de dagen
-    dagen <- seq_along(combined_calculations()[1,]) 
-    # Extraheren van de Total kolom uit de matrix
-    total_cells <- combined_calculations()[1,]
-    # Maak de data frame voor ggplot
-    data <- data.frame(Days = dagen, Number_of_cells = total_cells)
-    # Maak de plot met ggplot
-    ggplot(data, aes(x = Days, y = Number_of_cells)) +
-      geom_point() +
-      geom_line() +
-      labs(x = "Days", y = "Number of cells") +
-      ggtitle("Total cells over time") +
-      theme(plot.title = element_text(hjust = 0.5))  # Centreren van de titel
-  })
-  
-  output$plot2 <- renderPlot({
-    # Definieer de dagen
-    dagen <- seq_along(combined_calculations()[1,]) 
-    # Extraheren van de Total kolom uit de matrix
-    total_cells <- combined_calculations()[2,]
-    # Maak de data frame voor ggplot
-    data <- data.frame(Days = dagen, Number_of_PCs = total_cells)
-    # Maak de plot met ggplot
-    ggplot(data, aes(x = Days, y = Number_of_PCs)) +
-      geom_point() +
-      geom_line() +
-      ylim(10, 150) +  # Limieten instellen voor de y-as
-      labs(x = "Days", y = "Number of PCs") +
-      ggtitle("Number of PCs over time") +
-      theme(plot.title = element_text(hjust = 0.5))  # Centreren van de titel
-  })
-  
-  # Voeg tussenruimte toe tussen de plots
-  output$plot3 <- renderPlot({
-    # Definieer de dagen
-    dagen <- seq_along(combined_calculations()[1,]) 
-    # Extraheren van de Total kolom uit de matrix
-    total_cells <- combined_calculations()[3,]
-    # Maak de data frame voor ggplot
-    data <- data.frame(Days = dagen, Number_of_Stom = total_cells)
-    # Maak de plot met ggplot
-    ggplot(data, aes(x = Days, y = Number_of_Stom)) +
-      geom_point() +
-      geom_line() +
-      labs(x = "Days", y = "Number of stomata") +
-      ggtitle("Number of stomata over time") +
-      theme(plot.title = element_text(hjust = 0.5))  # Centreren van de titel
-  }) 
-  plot.spacing <- unit(1, "lines")
-  
-  output$plot4 <- renderPlot({
-    # Definieer de dagen
-    dagen <- seq_along(combined_calculations()[1,]) 
-    # Extraheren van de Total kolom uit de matrix
-    total_cells <- combined_calculations()[4,]
-    # Maak de data frame voor ggplot
-    data <- data.frame(Days = dagen, Number_of_SI = total_cells)
-    # Maak de plot met ggplot
-    ggplot(data, aes(x = Days, y = Number_of_SI)) +
-      geom_point() +
-      geom_line() +
-      labs(x = "Days", y = "SI") +
-      ggtitle("SI over time") +
-      theme(plot.title = element_text(hjust = 0.5))  # Centreren van de titel
-  })
-  
+  observeEvent(input$refresh_btn, {
+    # Reset file inputs
+    updateTextInput(session, "values_D1_file", value = "")
+    updateTextInput(session, "values_D2_file", value = "")
+    updateTextInput(session, "values_D3_file", value = "")
+    updateTextInput(session, "values_D4_file", value = "")
+    updateTextInput(session, "values_D5_file", value = "")
+    # Lees waardenbestanden in voor elk submenu-item
+    values_D1 <- reactive({
+      req(input$values_D1_file)
+      read.csv(input$values_D1_file$datapath)
+    })
+    
+    values_D2 <- reactive({
+      req(input$values_D2_file)
+      read.csv(input$values_D2_file$datapath)
+    })
+    
+    values_D3 <- reactive({
+      req(input$values_D3_file)
+      read.csv(input$values_D3_file$datapath)
+    })
+    
+    values_D4 <- reactive({
+      req(input$values_D4_file)
+      read.csv(input$values_D4_file$datapath)
+    })
+    
+    values_D5 <- reactive({
+      req(input$values_D5_file)
+      read.csv(input$values_D5_file$datapath)
+    })
+    
+    # Toon waardentabellen voor elk submenu-item
+    output$D1_table <- renderTable({
+      req(values_D1())
+      values_D1()
+    })
+    
+    output$D2_table <- renderTable({
+      req(values_D2())
+      values_D2()
+    })
+    
+    output$D3_table <- renderTable({
+      req(values_D3())
+      values_D3()
+    })
+    
+    output$D4_table <- renderTable({
+      req(values_D4())
+      values_D4()
+    })
+    
+    output$D5_table <- renderTable({
+      req(values_D5())
+      values_D5()
+    })
+    ###########################################################
+    ## calculations ##
+    ###########################################################
+    # Initialize the calculations list
+    calculations_list <- reactiveVal(list())
+    
+    # Perform calculations when a file is uploaded
+    observeEvent(input$values_D1_file, {
+      if (!is.null(input$values_D1_file)) {
+        values_D1 <- read.csv(input$values_D1_file$datapath)
+        nrPC_D1 <- length(which(values_D1$Type == "PC" & values_D1$area > 25))
+        nrSt_D1 <- length(which(values_D1$Type == "Stom"))
+        SI_D1 <- nrSt_D1 / (nrPC_D1 + nrSt_D1)
+        SD_D1 <- nrSt_D1 / sum(values_D1$area)
+        calculations_list( c(calculations_list(), list(D1 = c(nrPC_D1 + nrSt_D1, nrPC_D1, nrSt_D1, SI_D1, SD_D1))) )
+      }
+    })
+    
+    # Perform calculations for D2 similarly
+    observeEvent(input$values_D2_file, {
+      if (!is.null(input$values_D2_file)) {
+        values_D2 <- read.csv(input$values_D2_file$datapath)
+        nrPC_D2 <- length(which(values_D2$Type == "PC" & values_D2$area > 25))
+        nrSt_D2 <- length(which(values_D2$Type == "Stom"))
+        SI_D2 <- nrSt_D2 / (nrPC_D2 + nrSt_D2)
+        SD_D2 <- nrSt_D2 / sum(values_D2$area)
+        calculations_list( c(calculations_list(), list(D2 = c(nrPC_D2 + nrSt_D2, nrPC_D2, nrSt_D2, SI_D2, SD_D2))) )
+      }
+    })
+    
+    # Perform calculations for D3 similarly
+    observeEvent(input$values_D3_file, {
+      if (!is.null(input$values_D3_file)) {
+        values_D3 <- read.csv(input$values_D3_file$datapath)
+        nrPC_D3 <- length(which(values_D3$Type == "PC" & values_D3$area > 25))
+        nrSt_D3 <- length(which(values_D3$Type == "Stom"))
+        SI_D3 <- nrSt_D3 / (nrPC_D3 + nrSt_D3)
+        SD_D3 <- nrSt_D3 / sum(values_D3$area)
+        calculations_list( c(calculations_list(), list(D3 = c(nrPC_D3 + nrSt_D3, nrPC_D3, nrSt_D3, SI_D3, SD_D3))) )
+      }
+    })
+    
+    # Perform calculations for D4 similarly
+    observeEvent(input$values_D4_file, {
+      if (!is.null(input$values_D4_file)) {
+        values_D4 <- read.csv(input$values_D4_file$datapath)
+        nrPC_D4 <- length(which(values_D4$Type == "PC" & values_D4$area > 25))
+        nrSt_D4 <- length(which(values_D4$Type == "Stom"))
+        SI_D4 <- nrSt_D4 / (nrPC_D4 + nrSt_D4)
+        SD_D4 <- nrSt_D4 / sum(values_D4$area)
+        calculations_list( c(calculations_list(), list(D4 = c(nrPC_D4 + nrSt_D4, nrPC_D4, nrSt_D4, SI_D4, SD_D4))) )
+      }
+    })
+    
+    # Perform calculations for D5 similarly
+    observeEvent(input$values_D5_file, {
+      if (!is.null(input$values_D5_file)) {
+        values_D5 <- read.csv(input$values_D5_file$datapath)
+        nrPC_D5 <- length(which(values_D5$Type == "PC" & values_D5$area > 25))
+        nrSt_D5 <- length(which(values_D5$Type == "Stom"))
+        SI_D5 <- nrSt_D5 / (nrPC_D5 + nrSt_D5)
+        SD_D5 <- nrSt_D5 / sum(values_D5$area)
+        calculations_list( c(calculations_list(), list(D5 = c(nrPC_D5 + nrSt_D5, nrPC_D5, nrSt_D5, SI_D5, SD_D5))) )
+      }
+    })
+    
+    # Combine all calculations into a matrix
+    combined_calculations <- reactive({
+      result <- matrix(NA, nrow = 5, ncol = length(calculations_list()))
+      rownames(result) <- c("Total", "nr_PC", "nr_Stom", "SI", "SD")
+      for (i in seq_along(calculations_list())) {
+        result[, i] <- calculations_list()[[i]]
+      }
+      colnames(result) <- names(calculations_list())
+      result
+    })
+    
+    # Show the matrix in the UI
+    output$cell_param_table <- renderDataTable({
+      combined_calculations()
+    })
+    # Download handler
+    output$download_data <- downloadHandler(
+      filename = function() {
+        paste("cell_param_table.csv", sep = "")
+      },
+      content = function(file) {
+        write.csv(combined_calculations(), file, row.names = TRUE)
+      }
+    )
+    output$plot1 <- renderPlot({
+      # Definieer de dagen
+      dagen <- seq_along(combined_calculations()[1,]) 
+      # Extraheren van de Total kolom uit de matrix
+      total_cells <- combined_calculations()[1,]
+      # Maak de data frame voor ggplot
+      data <- data.frame(Days = dagen, Number_of_cells = total_cells)
+      # Maak de plot met ggplot
+      ggplot(data, aes(x = Days, y = Number_of_cells)) +
+        geom_point() +
+        geom_line() +
+        labs(x = "Days", y = "Number of cells") +
+        ggtitle("Total cells over time") +
+        theme(plot.title = element_text(hjust = 0.5))  # Centreren van de titel
+    })
+    
+    output$plot2 <- renderPlot({
+      # Definieer de dagen
+      dagen <- seq_along(combined_calculations()[1,]) 
+      # Extraheren van de Total kolom uit de matrix
+      total_cells <- combined_calculations()[2,]
+      # Maak de data frame voor ggplot
+      data <- data.frame(Days = dagen, Number_of_PCs = total_cells)
+      # Maak de plot met ggplot
+      ggplot(data, aes(x = Days, y = Number_of_PCs)) +
+        geom_point() +
+        geom_line() +
+        ylim(10, 150) +  # Limieten instellen voor de y-as
+        labs(x = "Days", y = "Number of PCs") +
+        ggtitle("Number of PCs over time") +
+        theme(plot.title = element_text(hjust = 0.5))  # Centreren van de titel
+    })
+    
+    # Voeg tussenruimte toe tussen de plots
+    output$plot3 <- renderPlot({
+      # Definieer de dagen
+      dagen <- seq_along(combined_calculations()[1,]) 
+      # Extraheren van de Total kolom uit de matrix
+      total_cells <- combined_calculations()[3,]
+      # Maak de data frame voor ggplot
+      data <- data.frame(Days = dagen, Number_of_Stom = total_cells)
+      # Maak de plot met ggplot
+      ggplot(data, aes(x = Days, y = Number_of_Stom)) +
+        geom_point() +
+        geom_line() +
+        labs(x = "Days", y = "Number of stomata") +
+        ggtitle("Number of stomata over time") +
+        theme(plot.title = element_text(hjust = 0.5))  # Centreren van de titel
+    }) 
+    plot.spacing <- unit(1, "lines")
+    
+    output$plot4 <- renderPlot({
+      # Definieer de dagen
+      dagen <- seq_along(combined_calculations()[1,]) 
+      # Extraheren van de Total kolom uit de matrix
+      total_cells <- combined_calculations()[4,]
+      # Maak de data frame voor ggplot
+      data <- data.frame(Days = dagen, Number_of_SI = total_cells)
+      # Maak de plot met ggplot
+      ggplot(data, aes(x = Days, y = Number_of_SI)) +
+        geom_point() +
+        geom_line() +
+        labs(x = "Days", y = "SI") +
+        ggtitle("SI over time") +
+        theme(plot.title = element_text(hjust = 0.5))  # Centreren van de titel
+    })
+ }) 
   #############################################################################
   # Function to load data and calculate centroids
   calculate_centroids <- function(data) {
