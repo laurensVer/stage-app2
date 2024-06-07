@@ -217,6 +217,7 @@ ui <- dashboardPage(
       tabItem(tabName = "area_plot",
               h1("Feature plot"),
               p("Please adjust the maximum limit to ensure all cells are within the range (grey cells are out of range)."),
+              p("If you don't see a plot, see corrected graph."),
               fluidRow(
                 column(width = 8,
                        plotOutput("areaplot", width = "55%", height = "450px"),
@@ -805,8 +806,7 @@ server <- function(input, output, session) {
     showModalDialog(FALSE)  # Set modal dialog status to FALSE
     showModalFunction()  # Show modal dialog
   })
-  observeEvent(input$refresh_btn, {
-    # Lees waardenbestanden in voor elk submenu-item
+  # Lees waardenbestanden in voor elk submenu-item
     values_D1 <- reactive({
       req(input$values_D1_file)
       read.csv(input$values_D1_file$datapath)
@@ -848,6 +848,7 @@ server <- function(input, output, session) {
       req(values_D5())
       values_D5()
     })
+    observeEvent(input$refresh_btn, {
     ###########################################################
     ## calculations ##
     ###########################################################
@@ -2040,7 +2041,15 @@ server <- function(input, output, session) {
     print(head(Values_D2))
     print("sorted_All_D2: ")
     print(str(sorted_All_D2))
-    list(sorted_All_D2 = sorted_All_D2, Values_D2 = Values_D2)
+    list(sorted_All_D2 = sorted_All_D2, Values_D2 = Values_D2, inv_lowvalues = inv_lowvalues)
+  })
+  tracking_inv_lowvalues <- reactive({
+    req(tracking())
+    tracking_result <- tracking()
+    inv_lowvalues <- tracking_result$inv_lowvalues
+    print("BOEM inv_lowvalues: ")
+    print(str(inv_lowvalues))
+    return(inv_lowvalues)
   })
   tracking_Values_D2 <- reactive({
     req(tracking())
@@ -2140,7 +2149,15 @@ server <- function(input, output, session) {
     print("this is sorted_All_D3: ")
     print(str(sorted_All_D3))
     
-    list(sorted_All_D3 = sorted_All_D3, Values_D3 = Values_D3)
+    list(sorted_All_D3 = sorted_All_D3, Values_D3 = Values_D3, inv_lowvalues = inv_lowvalues)
+  })
+  tracking_inv_lowvalues2 <- reactive({
+    req(tracking1())
+    tracking_result <- tracking1()
+    inv_lowvalues <- tracking_result$inv_lowvalues
+    print("BOEM inv_lowvalues: ")
+    print(str(inv_lowvalues))
+    return(inv_lowvalues)
   })
   tracking_Values_D3 <- reactive({
     req(tracking1())
@@ -2264,9 +2281,16 @@ server <- function(input, output, session) {
     print("this is sorted_All_D4: ")
     print(str(sorted_All_D4))
     
-    list(sorted_All_D4 = sorted_All_D4, Values_D4 = Values_D4)
+    list(sorted_All_D4 = sorted_All_D4, Values_D4 = Values_D4, inv_lowvalues = inv_lowvalues)
   })
-  
+  tracking_inv_lowvalues3 <- reactive({
+    req(tracking())
+    tracking_result <- tracking()
+    inv_lowvalues <- tracking_result$inv_lowvalues
+    print("BOEM inv_lowvalues: ")
+    print(str(inv_lowvalues))
+    return(inv_lowvalues)
+  })
   tracking_Values_D4 <- reactive({
     req(tracking2())
     
@@ -2353,6 +2377,7 @@ server <- function(input, output, session) {
   
   output$PC1.1 <- renderPlot({
     tracking <- tracking_sorted_All_D2()
+    inv_lowvalues <- tracking_inv_lowvalues()
     plot <- ggplot(tracking, aes(x = Xcoord, y = InvY, colour = confidence, alpha=Type_D2)) +
       geom_point(size = 0.1) +
       scale_alpha_manual(values = alphasss)+
@@ -2363,6 +2388,7 @@ server <- function(input, output, session) {
   })
   output$PC1.2 <- renderPlot({
     tracking <- tracking_sorted_All_D3()
+    inv_lowvalues <- tracking_inv_lowvalues2()
     plot <- ggplot(tracking, aes(x = Xcoord, y = InvY, colour = confidence, alpha=Type)) +
       geom_point(size = 0.1) +
       scale_alpha_manual(values = alphasss)+
@@ -2373,6 +2399,7 @@ server <- function(input, output, session) {
   })
   output$PC1.3 <- renderPlot({
     tracking <- tracking_sorted_All_D4()
+    inv_lowvalues <- tracking_inv_lowvalues3()
     plot <- ggplot(tracking, aes(x = Xcoord, y = InvY, colour = confidence, alpha=Type)) +
       geom_point(size = 0.1) +
       scale_alpha_manual(values = alphasss)+
