@@ -231,7 +231,7 @@ ui <- dashboardPage(
       ),
       tabItem(tabName = "upload_files",
               h1("Upload corrected Values files for cell tracking"),
-              
+              p("If you uploaded the wrong file, you can replace it by uploading the correct file via browse. Then you have to press submit button so the data for the next steps is correct."),
               sidebarLayout(
                 sidebarPanel(
                   fileInput("values_D1_file", "Upload the D1 file"),
@@ -239,7 +239,16 @@ ui <- dashboardPage(
                   fileInput("values_D3_file", "Upload the D3 file"),
                   fileInput("values_D4_file", "Upload the D4 file"),
                   fileInput("values_D5_file", "Upload the D5 file"),
-                  div(style = "margin-top: 20px;", actionButton("refresh_btn", "Refresh")),
+                  div(
+                    style = "margin-top: 20px;",
+                    actionButton(
+                      "refresh_btn", 
+                      label = "Submit", 
+                      icon = icon("check"), 
+                      style = "color: #fff; background-color: #28a745; border-color: #28a745;",
+                      title = "Submit"
+                    )
+                  )
                 ),
                 mainPanel(
                   tabsetPanel(
@@ -279,7 +288,16 @@ ui <- dashboardPage(
                 fileInput("upload_data3", "Upload data 3"),
                 fileInput("upload_data4", "Upload data 4"),
                 fileInput("upload_data5", "Upload data 5"),
-                actionButton("submit", "Submit"),
+                div(
+                  style = "margin-top: 20px;",
+                  actionButton(
+                    "submit", 
+                    label = "Submit", 
+                    icon = icon("check"), 
+                    style = "color: #fff; background-color: #28a745; border-color: #28a745;",
+                    title = "Submit"
+                  )
+                ),
                 downloadButton("download_sorted_All_D1", "Download sorted data"),
                 width = 3
               ),
@@ -788,59 +806,44 @@ server <- function(input, output, session) {
     showModalFunction()  # Show modal dialog
   })
   observeEvent(input$refresh_btn, {
-    # Reset file inputs
-    updateTextInput(session, "values_D1_file", value = "")
-    updateTextInput(session, "values_D2_file", value = "")
-    updateTextInput(session, "values_D3_file", value = "")
-    updateTextInput(session, "values_D4_file", value = "")
-    updateTextInput(session, "values_D5_file", value = "")
     # Lees waardenbestanden in voor elk submenu-item
     values_D1 <- reactive({
       req(input$values_D1_file)
       read.csv(input$values_D1_file$datapath)
     })
-    
     values_D2 <- reactive({
       req(input$values_D2_file)
       read.csv(input$values_D2_file$datapath)
     })
-    
     values_D3 <- reactive({
       req(input$values_D3_file)
       read.csv(input$values_D3_file$datapath)
     })
-    
     values_D4 <- reactive({
       req(input$values_D4_file)
       read.csv(input$values_D4_file$datapath)
     })
-    
     values_D5 <- reactive({
       req(input$values_D5_file)
       read.csv(input$values_D5_file$datapath)
     })
-    
     # Toon waardentabellen voor elk submenu-item
     output$D1_table <- renderTable({
       req(values_D1())
       values_D1()
     })
-    
     output$D2_table <- renderTable({
       req(values_D2())
       values_D2()
     })
-    
     output$D3_table <- renderTable({
       req(values_D3())
       values_D3()
     })
-    
     output$D4_table <- renderTable({
       req(values_D4())
       values_D4()
     })
-    
     output$D5_table <- renderTable({
       req(values_D5())
       values_D5()
@@ -923,18 +926,15 @@ server <- function(input, output, session) {
     })
     
     # Show the matrix in the UI
-    output$cell_param_table <- renderDataTable({
-      combined_calculations()
-    })
+    output$cell_param_table <- renderDataTable({ combined_calculations() })
+    
     # Download handler
     output$download_data <- downloadHandler(
-      filename = function() {
-        paste("cell_param_table.csv", sep = "")
-      },
-      content = function(file) {
-        write.csv(combined_calculations(), file, row.names = TRUE)
-      }
+      filename = function() { paste("cell_param_table.csv", sep = "") },
+      content = function(file) { write.csv(combined_calculations(), file, row.names = TRUE) }
     )
+    
+    # Plot 1
     output$plot1 <- renderPlot({
       # Definieer de dagen
       dagen <- seq_along(combined_calculations()[1,]) 
@@ -951,6 +951,7 @@ server <- function(input, output, session) {
         theme(plot.title = element_text(hjust = 0.5))  # Centreren van de titel
     })
     
+    # Plot 2
     output$plot2 <- renderPlot({
       # Definieer de dagen
       dagen <- seq_along(combined_calculations()[1,]) 
@@ -968,7 +969,7 @@ server <- function(input, output, session) {
         theme(plot.title = element_text(hjust = 0.5))  # Centreren van de titel
     })
     
-    # Voeg tussenruimte toe tussen de plots
+    # Plot 3
     output$plot3 <- renderPlot({
       # Definieer de dagen
       dagen <- seq_along(combined_calculations()[1,]) 
@@ -983,9 +984,9 @@ server <- function(input, output, session) {
         labs(x = "Days", y = "Number of stomata") +
         ggtitle("Number of stomata over time") +
         theme(plot.title = element_text(hjust = 0.5))  # Centreren van de titel
-    }) 
-    plot.spacing <- unit(1, "lines")
+    })
     
+    # Plot 4
     output$plot4 <- renderPlot({
       # Definieer de dagen
       dagen <- seq_along(combined_calculations()[1,]) 
@@ -1001,7 +1002,7 @@ server <- function(input, output, session) {
         ggtitle("SI over time") +
         theme(plot.title = element_text(hjust = 0.5))  # Centreren van de titel
     })
- }) 
+  })
   #############################################################################
   # Function to load data and calculate centroids
   calculate_centroids <- function(data) {
