@@ -1675,21 +1675,23 @@ server <- function(input, output, session) {
     print(str(Values_D3))
     
     #First, the stomata are extracted from the datasets (again only D1 and D2)
-    #Stomata_D2<-subset(Values_D2[Values_D2$Type_D2=="Stom"|Values_D2$Type_D2=="NEW_Stom",]) #Deze zin is aangepast om ook NEW_stom mee te nemen
+    # Subset Values_D3 to include both "Stom" and "NEW_Stom"
+    Stomata_D3 <- subset(Values_D3[Values_D3$Type_D3 == "Stom" | Values_D3$Type_D3 == "NEW_Stom",])
+    # Update column names
+    colnames(Stomata_D3) <- c("St_cellid_D3", "St_area_D3", "St_old_CoMX_D3", "St_old_CoMY_D3", "St_Peri_D3", "St_area_px_D3", "St_Circ_D3", "St_Type_D3", "St_CoMX_D3", "St_CoMY_D3")
     Stomata_D4<-subset(Values_D4[Values_D4$Type_D4=="Stom",])
     #colnames(Stomata_D2)<-c("St_cellid_D2","St_area_D2","St_old_CoMX_D2", "St_old_CoMY_D2","St_Peri_D2","St_area_px_D2", "St_Circ_D2", "St_Type_D2", "St_CoMX_D2","St_CoMY_D2")
     colnames(Stomata_D4)<-c("St_cellid_D4","St_area_D4","St_old_CoMX_D4", "St_old_CoMY_D4","St_Peri_D4","St_area_px_D4", "St_Circ_D4", "St_Type_D4", "St_CoMX_D4","St_CoMY_D4")
     #attach(Stomata_D2)
-    attach(Stomata_D4)
-    St_CoMX_D3_px<-St_CoMX_D3#*scale_D2
-    St_CoMY_D3_px<-St_CoMY_D3#*scale_D2
-    St_CoMX_D4_px<-St_CoMX_D4#*scale_D3
-    St_CoMY_D4_px<-St_CoMY_D4#*scale_D3
+    St_CoMX_D3_px<-Stomata_D3$St_CoMX_D3#*scale_D2
+    St_CoMY_D3_px<-Stomata_D3$St_CoMY_D3#*scale_D2
+    St_CoMX_D4_px<-Stomata_D4$St_CoMX_D4#*scale_D3
+    St_CoMY_D4_px<-Stomata_D4$St_CoMY_D4#*scale_D3
     
     St_pos_ch<-c()
     St_pc<-c()
-    for (j in 1:length(St_area_D4)){
-      for (i in 1:length(St_area_D3)){
+    for (j in 1:length(Stomata_D4$St_area_D4)){
+      for (i in 1:length(Stomata_D3$St_area_D3)){
         St_pc<-(((((St_CoMX_D4_px[j]-St_CoMX_D3_px[i])*2)^2)+((St_CoMY_D4_px[j]-St_CoMY_D3_px[i])^2))^(1/2))
         St_pos_ch<-c(St_pos_ch,St_pc)
         St_pc<-c()
@@ -1697,11 +1699,11 @@ server <- function(input, output, session) {
     }
     St_scores<-St_pos_ch
     length(St_scores)
-    St_scoretable<-matrix(St_scores,nrow=length(St_cellid_D4), ncol=length(St_cellid_D3), byrow=TRUE)
+    St_scoretable<-matrix(St_scores,nrow=length(Stomata_D4$St_cellid_D4), ncol=length(Stomata_D3$St_cellid_D3), byrow=TRUE)
     #View(St_scoretable)
     St_bestmatch<-apply(St_scoretable, 1, which.min)
     for (i in 1:length(St_bestmatch)){
-      Stomata_D4$D4_St_PrevID[i]<-St_cellid_D3[St_bestmatch[i]]
+      Stomata_D4$D4_St_PrevID[i]<-Stomata_D3$St_cellid_D3[St_bestmatch[i]]
       Stomata_D4$D4_St_score[i]<-min(St_scoretable[i,])
     }
     
@@ -2164,7 +2166,7 @@ server <- function(input, output, session) {
     return(sorted_all_d3)
   })
   
-  ### Values_D3 en D3
+  ### Values_D3 en D4
   tracking2 <- reactive({
     req(V_D3(), V_D4(),tracking_Values_D2() ,tracking_Values_D3(), Values_D4(), sorted_All_D4())
     
