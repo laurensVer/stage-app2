@@ -30,7 +30,8 @@ ui <- dashboardPage(
                menuSubItem("Check cell separation", tabName = "graph1"),
                menuSubItem("Cell type graph", tabName = "graph2"),
                menuSubItem("Corrected graph", tabName = "corrected_data"),
-               menuSubItem("Feature plots", tabName = "area_plot")
+               menuSubItem("Feature plots", tabName = "area_plot"),
+               menuSubItem("Data Display", tabName = "data_display")
       ),
       menuItem("Cell tracking", tabName = "cell tracking", icon = icon("clock"),
                menuSubItem("Upload Files", tabName = "upload_files"),
@@ -380,6 +381,18 @@ ui <- dashboardPage(
                     div(style = "width: 90%; margin-top: 20px; margin-left: 65px;", plotOutput("PC1.3")),
                   )
               )
+      ),
+      tabItem(tabName = "data_display",
+              h2("Merge Data"),
+              selectInput("column_select", "Select Column from Values Data", choices = NULL),
+              actionButton("merge_data", "Merge Data"),
+              br(),
+              DTOutput("merged_table"),
+              br(),
+              h2("Plot Data"),
+              selectInput("plot_column_select", "Select Column for Plot", choices = NULL),
+              plotOutput("scatter_plot")
+              
       )
     )
   )
@@ -675,6 +688,42 @@ server <- function(input, output, session) {
             axis.title.x=element_blank(), axis.title.y=element_blank())
     print(plot_data)
   })
+  
+  # Reactieve expressie voor waarden en bijgewerkte circulatiegegevens
+  # Update de selectInput met kolommen van de values data
+  # Update de selectInput met kolommen van de circ() data
+  observe({
+    req(circ())
+    updateSelectInput(session, "column_select", choices = names(circ()$values_df))
+  })
+  
+  # Merge de datasets
+  merged_data <- eventReactive(input$merge_data, {
+    req(circ())
+    circulation <- circ()$sorted_All
+    values <- circ()$values_df
+    column_selected <- input$column_select
+    merge(circulation, values[, c("area", "Type", column_selected)], by = c("area", "Type"), all.x = TRUE)
+  })
+  
+  # Render de merged data tabel
+  output$merged_table <- renderDT({
+    merged_data()
+  })
+  observe({
+    req(merged_data())
+    updateSelectInput(session, "plot_column_select", choices = c("Xcoord", "InvY", names(merged_data())))
+  })
+  
+  # Plot de data
+  output$scatter_plot <- renderPlot({
+    req(merged_data())
+    ggplot(merged_data(), aes_string(x = "Xcoord", y = "InvY", color = input$plot_column_select)) +
+      geom_point() +
+      labs(x = "Xcoord", y = "InvY") +
+      theme_minimal()
+  }, width = 600, height = 500)
+  
   ##############################################################################
   ### Download section ###
   ##############################################################################
