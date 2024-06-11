@@ -9,6 +9,7 @@ library(orca)
 library(scales)
 library(DT)
 library(grid)
+library(shinyWidgets)
 
 ui <- dashboardPage(
   dashboardHeader(title = "LeafXtrack",
@@ -384,7 +385,11 @@ ui <- dashboardPage(
       ),
       tabItem(tabName = "data_display",
               h2("Merge Data"),
-              selectInput("column_select", "Select Column from Values Data", choices = NULL),
+              pickerInput("columns_select", 
+                          "Select Columns from Values Data", 
+                          choices = NULL, 
+                          multiple = TRUE, 
+                          options = list(`actions-box` = TRUE)),
               actionButton("merge_data", "Merge Data"),
               br(),
               DTOutput("merged_table"),
@@ -694,7 +699,7 @@ server <- function(input, output, session) {
   # Update de selectInput met kolommen van de circ() data
   observe({
     req(circ())
-    updateSelectInput(session, "column_select", choices = names(circ()$values_df))
+    updatePickerInput(session, "columns_select", choices = names(circ()$values_df))
   })
   
   # Merge de datasets
