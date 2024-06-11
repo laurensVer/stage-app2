@@ -392,12 +392,12 @@ ui <- dashboardPage(
                           options = list(`actions-box` = TRUE)),
               actionButton("merge_data", "Merge Data"),
               br(),
+              h2("Merged Data table"),
               DTOutput("merged_table"),
               br(),
               h2("Plot Data"),
               selectInput("plot_column_select", "Select Column for Plot", choices = NULL),
               plotOutput("scatter_plot")
-              
       )
     )
   )
@@ -696,7 +696,7 @@ server <- function(input, output, session) {
   
   # Reactieve expressie voor waarden en bijgewerkte circulatiegegevens
   # Update de selectInput met kolommen van de values data
-  # Update de selectInput met kolommen van de circ() data
+  # Update de checkboxGroupInput met kolommen van de circ() data
   observe({
     req(circ())
     updatePickerInput(session, "columns_select", choices = names(circ()$values_df))
@@ -707,14 +707,16 @@ server <- function(input, output, session) {
     req(circ())
     circulation <- circ()$sorted_All
     values <- circ()$values_df
-    column_selected <- input$column_select
-    merge(circulation, values[, c("area", "Type", column_selected)], by = c("area", "Type"), all.x = TRUE)
+    columns_selected <- input$columns_select
+    merge_columns <- c("area", "Type", columns_selected)
+    merge(circulation, values[, merge_columns], by = c("area", "Type"), all.x = TRUE)
   })
   
   # Render de merged data tabel
   output$merged_table <- renderDT({
     merged_data()
   })
+  
   observe({
     req(merged_data())
     updateSelectInput(session, "plot_column_select", choices = c("Xcoord", "InvY", names(merged_data())))
@@ -728,7 +730,7 @@ server <- function(input, output, session) {
       labs(x = "Xcoord", y = "InvY") +
       theme_minimal()
   }, width = 600, height = 500)
-  
+
   ##############################################################################
   ### Download section ###
   ##############################################################################
