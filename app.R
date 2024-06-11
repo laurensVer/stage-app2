@@ -699,7 +699,12 @@ server <- function(input, output, session) {
   # Update de checkboxGroupInput met kolommen van de circ() data
   observe({
     req(circ())
-    updatePickerInput(session, "columns_select", choices = names(circ()$values_df))
+    # Verkrijg de namen van alle kolommen
+    all_columns <- names(circ()$values_df)
+    # Verwijder de eerste vier kolommen
+    choices <- setdiff(all_columns, names(circ()$values_df)[c(1:4,6)])
+    # Update de pickerInput
+    updatePickerInput(session, "columns_select", choices = choices)
   })
   
   # Merge de datasets
