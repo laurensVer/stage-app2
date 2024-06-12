@@ -376,11 +376,24 @@ ui <- dashboardPage(
                     div(style = "width: 120%;", plotOutput("PC4")),
                 ),
                 div(
+                  style = "width: 70%; margin-left: 65px; display: flex; justify-content: space-between; align-items: center;", 
+                  div(
+                    textInput("input_ids", "Enter numeric IDs (comma-separated):"),
+                    actionButton("update_plots", "Update Plots")
+                  ),
+                  div(style = "margin-left: 145px;"), # Witruimte toevoegen
+                  div(
+                    textInput("input_ids2", "Enter numeric IDs (comma-separated):"),
+                    actionButton("update_plots2", "Update Plots")
+                  )
+                ),
+                div(
                   style = "overflow-x: scroll; white-space: nowrap; width: 150%; margin-top: 10px; display: grid; grid-template-columns: repeat(3, 1fr); grid-gap: 20px;",
                     div(style = "width: 90%; margin-top: 20px; margin-left: 65px;", plotOutput("PC1.1")),
                     div(style = "width: 90%; margin-top: 20px; margin-left: 65px;", plotOutput("PC1.2")),
                     div(style = "width: 90%; margin-top: 20px; margin-left: 65px;", plotOutput("PC1.3")),
-                  )
+                  ),
+                downloadButton("downloadPlots", "Download All Plots")
               )
       ),
       tabItem(tabName = "data_display",
@@ -701,7 +714,7 @@ server <- function(input, output, session) {
     req(circ())
     # Verkrijg de namen van alle kolommen
     all_columns <- names(circ()$values_df)
-    # Verwijder de eerste vier kolommen
+    # remove the first 4 en the 6 colomns
     choices <- setdiff(all_columns, names(circ()$values_df)[c(1:4,6)])
     # Update de pickerInput
     updatePickerInput(session, "columns_select", choices = choices)
@@ -2102,7 +2115,7 @@ server <- function(input, output, session) {
     print(head(Values_D2))
     print("sorted_All_D2: ")
     print(str(sorted_All_D2))
-    list(sorted_All_D2 = sorted_All_D2, Values_D2 = Values_D2, inv_lowvalues = inv_lowvalues)
+    list(sorted_All_D2 = sorted_All_D2, Values_D2 = Values_D2, inv_lowvalues = inv_lowvalues, scoretable = scoretable)
   })
   tracking_inv_lowvalues <- reactive({
     req(tracking())
@@ -2128,7 +2141,57 @@ server <- function(input, output, session) {
     print(str(sorted_all_D2))
     return(sorted_all_D2)
   })
-  
+  tracking_scoretable <- reactive({
+    req(tracking())
+    tracking_result <- tracking()
+    scoretable <- tracking_result$scoretable
+    print("scoretable: ")
+    print(str(scoretable))
+    return(scoretable)
+  })
+  # updated_tracking
+  updated_tracking <- reactive({
+    req(input$input_ids, V_D1(), tracking_Values_D2(), tracking_sorted_All_D2(), tracking_scoretable())
+    
+    # Haal de ingevoerde ID's op
+    input_ids <- unlist(strsplit(input$input_ids, ","))
+    
+    # Maak een kopie van tracking_Values_D2 om aan te passen
+    updated_tracking_Values_D2 <- tracking_Values_D2()
+    tracking_sorted_All_D2 <- tracking_sorted_All_D2()
+    V_D1 <- V_D1()
+    scoretable <- tracking_scoretable()
+    
+    for (w in 1:length(input_ids)) {
+      input_id <- as.integer(input_ids[w])
+      
+      # Zoek de rij-index die overeenkomt met de huidige input_id
+      rowextract <- match(input_id, updated_tracking_Values_D2$cellid_D2)
+      
+      # Sorteer de scores van de gevonden rij
+      tosort <- scoretable[rowextract,]
+      sorted <- order(tosort)
+      
+      # Zoek de bijbehorende ID's
+      findid <- V_D1$cellid[sorted]
+      
+      # Selecteer de tweede ID als de gecorrigeerde ID
+      corrected <- findid[2]
+      
+      # Update de vorige ID met de gecorrigeerde ID
+      updated_tracking_Values_D2$D2_PrevID[rowextract] <- corrected
+    }
+    
+    # Maak een kopie van de bijgewerkte gegevens voor de plot
+    updated_tracking_sorted_All_D2 <- tracking_sorted_All_D2()
+    
+    # Update de D2_OrigID in de bijgewerkte gegevens
+    updated_tracking_sorted_All_D2$D2_OrigID <- rep(updated_tracking_Values_D2$D2_PrevID, updated_tracking_Values_D2$areapx_D2)
+    
+    # Return de bijgewerkte tracking datasets afzonderlijk
+    return(list(tracking_sorted_All_D2 = updated_tracking_sorted_All_D2, updated_tracking_Values_D2 = updated_tracking_Values_D2))
+  })
+  #############################################################
   ### Values_D2 en D3
   tracking1 <- reactive({
     req(V_D3(), V_D2(), tracking_Values_D2(), Values_D3(), sorted_All_D3())
@@ -2469,6 +2532,48 @@ server <- function(input, output, session) {
       theme(panel.grid = element_blank(), legend.position = "none", axis.title = element_blank())
     plot
   })
+  adj_sc_D2<-1
+  observeEvent(input$update_plots, {
+    # Haal de bijgewerkte tracking datasets op
+    updated_data <- updated_tracking()
+    
+    # Recreate PC2 plot based on the updated data
+    plot2 <- ggplot(updated_data$tracking_sorted_All_D2, aes(x = Xcoord*adj_sc_D2+50, y = InvY*adj_sc_D2+40, colour = as.factor(D2_OrigID), alpha=Type)) +
+      geom_point(size = 0.1) +
+      scale_color_manual(values = colsss) +
+      scale_alpha_manual(values = alphasss) +
+      theme(panel.background = element_rect(fill = "gray27")) +
+      theme(panel.grid = element_blank(), legend.position = "none") # Your logic here
+    output$PC2 <- renderPlot(plot2)
+  })
+  
+  
+  
+  
+  # Download handler for the plots
+  output$downloadPlots <- downloadHandler(
+    filename = function() {
+      paste("all_plots", Sys.Date(), ".zip", sep = "")
+    },
+    content = function(file) {
+      # Temporary directory to save the plots
+      temp_dir <- tempdir()
+      plot_ids <- c("PC1", "PC2", "PC1.1", "PC1.2", "PC1.3", "PC3", "PC4")
+      plot_files <- character(length(plot_ids))
+      
+      for (i in seq_along(plot_ids)) {
+        plot_file <- file.path(temp_dir, paste0(plot_ids[i], ".png"))
+        plot_files[i] <- plot_file
+        png(plot_file, width = 800, height = 600)
+        plot_fn <- get(plot_ids[i])
+        print(plot_fn())
+        dev.off()
+      }
+      
+      # Create a zip file
+      zip(zipfile = file, files = plot_files)
+    }
+  )
   
 }
 shinyApp(ui = ui, server = server)
