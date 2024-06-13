@@ -10,6 +10,7 @@ library(scales)
 library(DT)
 library(grid)
 library(shinyWidgets)
+library(zip)
 
 ui <- dashboardPage(
   dashboardHeader(title = "LeafXtrack",
@@ -468,6 +469,9 @@ server <- function(input, output, session) {
     Cells <- read.delim(input$cells_file$datapath, row.names = 1)
     Cells[, 2:ncol(Cells)] # Pas aan indien nodig
   })
+  cells_copy <- reactive({
+    cells()
+  })
   
   # Bereken coördinaten van de cellen
   cell_coordinates <- reactive({
@@ -706,25 +710,124 @@ server <- function(input, output, session) {
             axis.title.x=element_blank(), axis.title.y=element_blank())
     print(plot_data)
   })
+  #########################
+  ## neighbours
+  neighbours <- reactive({
+    req(cells_copy(), circ())
+    cell <- cells_copy()
+    values <- circ()$values_df
+    print("this is cell: ")
+    print(cell)
+    print("circ_values_df: ")
+    print(values)
+    current_id<-c()
+    neighbours<-c()
+    earlier_id<-cell[1,1]
+    #Horizontaal zoeken naar welke cellen naast elkaar staan
+    for (i in 1:nrow(cell)){
+      for (j in 1:ncol(cell)){
+        current_id<-cell[i,j]
+        if (current_id != earlier_id){
+          neighbours<-c(neighbours,current_id)
+          earlier_id<-current_id
+        } else {
+        }
+      }
+      neighbours<-c(neighbours,1000)
+      earlier_id<-0
+    }
+    #Verticaal zoeken naar welke cellen naast elkaar staan
+    for (i in 1:ncol(cell)){
+      for (j in 1:nrow(cell)){
+        current_id<-cell[j,i]
+        if (current_id != earlier_id){
+          neighbours<-c(neighbours,current_id)
+          earlier_id<-current_id
+        } else {
+        }
+      }
+      neighbours<-c(neighbours,1000)
+      earlier_id<-0
+    }
+    #Nullen verwijderen als neighbour (nullen zijn celranden, dus elke cell heeft een celrand als neighbour)
+    neighbours_no_0<-c()
+    for (i in 1:length(neighbours)){
+      if (neighbours[i]>0){
+        neighbours_no_0<-c(neighbours_no_0,neighbours[i])
+      }
+    }
+    neighbours<-neighbours_no_0
+    neighbours
+  })
+  
+  new_column <- reactive({
+    req(neighbours(), circ())
+    neighbours <- neighbours()
+    values <- circ()$values_df
+    sorted_All_D <- circ()$sorted_All
+    id<-c()
+    adjacent<-c()
+    numb_neigh_per_id<-c()
+    all_numb_neigh<-c()
+    for (i in 1:length(values$cellid)){ #Weet nu niet meer of dit cellid_DAG noemt
+      id<-values$cellid[i]
+      for (j in 2:(length(neighbours)-1)){
+        if (neighbours[j] == id & neighbours[j-1]<1000 & neighbours[j] != neighbours[j-1]){
+          adjacent<-c(adjacent,neighbours[j-1])
+        }
+        if (neighbours[j] == id & neighbours[j+1]<1000 & neighbours[j] != neighbours[j+1]){
+          adjacent<-c(adjacent,neighbours[j+1])
+        } 
+      }
+      adjacent<-adjacent[duplicated(adjacent) | duplicated(adjacent, fromLast=TRUE)]
+      numb_neigh_per_id<-sum(unique(adjacent)>0)
+      all_numb_neigh<-c(all_numb_neigh,numb_neigh_per_id)
+      print(unique(adjacent))
+      adjacent<-c()
+      all_numb_neigh
+    }
+    values$Topology <- all_numb_neigh
+    values
+    border_cells<-c()
+    for (i in 2:length(neighbours)-1){
+      if (neighbours[i] == 1000){
+        border_cells<-c(border_cells,neighbours[i-1],neighbours[i+1])
+      }
+    }
+    border_cells<-unique(border_cells)
+    for (i in 1:length(values$Topology)){
+      if (values$cellid[i] %in% border_cells){
+        values$Topology[i]<-1000
+      }
+    }
+    values
+    #neighbours_list <- rep(values$Topology, values$areapx)
+    #sorted_All_D$numb_neighbours<-neighbours_list
+    print(sorted_All_D)
+    print(values)
+    return(list(sorted_All_D = sorted_All_D, values = values))
+    
+  })
   
   # Reactieve expressie voor waarden en bijgewerkte circulatiegegevens
   # Update de selectInput met kolommen van de values data
   # Update de checkboxGroupInput met kolommen van de circ() data
   observe({
-    req(circ())
+    req(new_column())
+    values <- new_column()$values
     # Verkrijg de namen van alle kolommen
-    all_columns <- names(circ()$values_df)
+    all_columns <- names(values)
     # remove the first 4 en the 6 colomns
-    choices <- setdiff(all_columns, names(circ()$values_df)[c(1:4,6)])
+    choices <- setdiff(all_columns, names(values)[c(1:4,6)])
     # Update de pickerInput
     updatePickerInput(session, "columns_select", choices = choices)
   })
   
   # Merge de datasets
   merged_data <- eventReactive(input$merge_data, {
-    req(circ())
-    circulation <- circ()$sorted_All
-    values <- circ()$values_df
+    req(new_column())
+    circulation <- new_column()$sorted_All_D
+    values <- new_column()$values
     columns_selected <- input$columns_select
     merge_columns <- c("area", "Type", columns_selected)
     merge(circulation, values[, merge_columns], by = c("area", "Type"), all.x = TRUE)
@@ -741,14 +844,24 @@ server <- function(input, output, session) {
   })
   
   # Plot de data
+  colss<-c("1" =  "antiquewhite2","2" =  "aquamarine","3" =  "aquamarine3","4" =  "aquamarine4","5" =  "azure1","6" =  "azure4","7" =  "bisque1","8" =  "bisque4","9" =  "blue","10" =  "blue3","11" =  "brown","12" =  "brown3","13" =  "burlywood1","14" =  "burlywood4","15" =  "cadetblue2","16" =  "chartreuse","17" =  "chartreuse3","18" =  "chocolate1","19" =  "chocolate4","20" =  "coral2","21" =  "cornflowerblue","22" =  "cornsilk2","23" =  "cyan","24" =  "cyan3","25" =  "darkcyan","26" =  "darkgoldenrod2","27" =  "darkgray","28" =  "darkkhaki","29" =  "darkolivegreen1","30" =  "darkolivegreen4","31" =  "darkorange2","32" =  "darkorchid","33" =  "darkorchid3","34" =  "darksalmon","35" =  "darkseagreen2","36" =  "darkslateblue","37" =  "darkslategray2","38" =  "darkslategrey","39" =  "deeppink","40" =  "deeppink3","41" =  "deepskyblue1","42" =  "deepskyblue4","43" =  "dodgerblue","44" =  "dodgerblue3","45" =  "firebrick1","46" =  "firebrick4","47" =  "gainsboro","48" =  "gold1","49" =  "gold4","50" =  "goldenrod2","51" =  "gray","52" =  "gray17","53" =  "gray35","54" =  "gray53","55" =  "gray71","56" =  "gray92","57" =  "green","58" =  "green3","59" =  "honeydew","60" =  "honeydew3","61" =  "hotpink1","62" =  "hotpink4","63" =  "indianred2","64" =  "ivory","65" =  "ivory3","66" =  "khaki1","67" =  "khaki4","68" =  "lavenderblush1","69" =  "lavenderblush4","70" =  "lemonchiffon1","71" =  "lemonchiffon4","72" =  "lightblue2","73" =  "lightcoral","74" =  "lightcyan2","75" =  "lightgoldenrod","76" =  "lightgoldenrod3","77" =  "lightgray","78" =  "lightpink","79" =  "lightpink3","80" =  "lightsalmon1","81" =  "lightsalmon4","82" =  "lightskyblue1","83" =  "lightskyblue4","84" =  "lightslategrey","85" =  "lightsteelblue2","86" =  "lightyellow","87" =  "lightyellow3","88" =  "linen","89" =  "magenta2","90" =  "maroon","91" =  "maroon3","92" =  "mediumblue","93" =  "mediumorchid2","94" =  "mediumpurple","95" =  "mediumpurple3","96" =  "mediumslateblue","97" =  "mediumvioletred","98" =  "mistyrose","99" =  "mistyrose3","100" =  "navajowhite","101" =  "navajowhite3","102" =  "navyblue","103" =  "olivedrab1","104" =  "olivedrab4","105" =  "orange2","106" =  "orangered","107" =  "orangered3","108" =  "orchid1","109" =  "orchid4","110" =  "palegreen1","111" =  "palegreen4","112" =  "paleturquoise2","113" =  "palevioletred","114" =  "palevioletred3","115" =  "peachpuff","116" =  "peachpuff3","117" =  "pink","118" =  "pink3","119" =  "plum1","120" =  "plum4","121" =  "purple1","122" =  "purple4","123" =  "red2","124" =  "rosybrown","125" =  "rosybrown3","126" =  "royalblue1","127" =  "royalblue4","128" =  "salmon1","129" =  "salmon4","130" =  "seagreen1","131" =  "seagreen4","132" =  "seashell2","133" =  "sienna","134" =  "sienna3","135" =  "skyblue1","136" =  "skyblue4","137" =  "slateblue2","138" =  "slategray","139" =  "slategray3","140" =  "snow","141" =  "snow3","142" =  "springgreen1","143" =  "springgreen4","144" =  "steelblue2","145" =  "tan","146" =  "tan3","147" =  "thistle1","148" =  "thistle4","149" =  "tomato2","150" =  "turquoise","151" =  "turquoise3","152" =  "violetred","153" =  "violetred3","154" =  "wheat1","155" =  "wheat4","156" =  "yellow1","157" =  "yellow4","158" =  "aliceblue","159" =  "antiquewhite2","160" =  "aquamarine","161" =  "aquamarine3","162" =  "azure1","163" =  "azure4","164" =  "bisque1","165" =  "bisque4","166" =  "blue","167" =  "blue3","168" =  "brown","169" =  "brown3","170" =  "burlywood1","171" =  "burlywood4","172" =  "cadetblue2","173" =  "chartreuse","174" =  "chartreuse3","175" =  "chocolate1","176" =  "chocolate4","177" =  "coral2","178" =  "cornflowerblue","179" =  "cornsilk2","180" =  "cyan","181" =  "cyan3","182" =  "darkcyan","183" =  "darkgoldenrod2","184" =  "darkgray","185" =  "darkkhaki","186" =  "darkolivegreen1","187" =  "darkolivegreen4","188" =  "darkorange2","189" =  "darkorchid","190" =  "darkorchid3","191" =  "darksalmon","192" =  "darkseagreen2","1000" =  "grey30")
   output$scatter_plot <- renderPlot({
     req(merged_data())
-    ggplot(merged_data(), aes_string(x = "Xcoord", y = "InvY", color = input$plot_column_select)) +
-      geom_point() +
-      labs(x = "Xcoord", y = "InvY") +
-      theme_minimal()
+    if (input$plot_column_select == "Topology") {
+      ggplot(merged_data(), aes(x = Xcoord, y = InvY, colour = as.factor(Topology))) +
+        geom_point(size = 0.4) +
+        scale_color_manual(values = colss) +
+        theme(panel.background = element_rect(fill = "black")) +
+        theme(panel.grid = element_blank(), legend.position = "right") +
+        labs(x = "Xcoord", y = "InvY", colour = "Topology")
+    } else {
+      ggplot(merged_data(), aes_string(x = "Xcoord", y = "InvY", color = input$plot_column_select)) +
+        geom_point() +
+        labs(x = "Xcoord", y = "InvY") +
+        theme_minimal()
+    }
   }, width = 600, height = 500)
-
+  
   ##############################################################################
   ### Download section ###
   ##############################################################################
@@ -2565,7 +2678,7 @@ server <- function(input, output, session) {
         plot_file <- file.path(temp_dir, paste0(plot_ids[i], ".png"))
         plot_files[i] <- plot_file
         png(plot_file, width = 800, height = 600)
-        plot_fn <- get(plot_ids[i])
+        plot_fn <- get(paste0("output$", plot_ids[i]))
         print(plot_fn())
         dev.off()
       }
