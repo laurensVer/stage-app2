@@ -352,18 +352,18 @@ ui <- dashboardPage(
               p("The lower row indicates corresponding stomata in the same color, new stomata appear in other colors."),
               mainPanel(
                 div(style = "overflow-x: scroll; white-space: nowrap; width: 150%; display: grid; grid-template-columns: repeat(5, 1fr); grid-gap: 20px;",
-                    div(style = "float: left; width: 120%;", plotOutput("BAM")),
-                    div(style = "float: left; width: 120%;", plotOutput("BAM2")),
-                    div(style = "float: left; width: 120%;", plotOutput("BAM3")),
-                    div(style = "float: left; width: 120%;", plotOutput("BAM4")),
-                    div(style = "float: left; width: 120%;", plotOutput("BAM5"))
+                    div(style = "float: left; width: 130%;", plotOutput("BAM")),
+                    div(style = "float: left; width: 130%;", plotOutput("BAM2")),
+                    div(style = "float: left; width: 130%;", plotOutput("BAM3")),
+                    div(style = "float: left; width: 130%;", plotOutput("BAM4")),
+                    div(style = "float: left; width: 130%;", plotOutput("BAM5"))
                 ),
                 div(style = "overflow-x: scroll; white-space: nowrap; width: 150%; display: grid; grid-template-columns: repeat(5, 1fr); grid-gap: 20px;",
-                    div(style = "float: left; width: 120%;", plotOutput("BOEM1")),
-                    div(style = "float: left; width: 120%;", plotOutput("BOEM2")),
-                    div(style = "float: left; width: 120%;", plotOutput("BOEM3")),
-                    div(style = "float: left; width: 120%;", plotOutput("BOEM4")),
-                    div(style = "float: left; width: 120%;", plotOutput("BOEM5"))
+                    div(style = "float: left; width: 130%;", plotOutput("BOEM1")),
+                    div(style = "float: left; width: 130%;", plotOutput("BOEM2")),
+                    div(style = "float: left; width: 130%;", plotOutput("BOEM3")),
+                    div(style = "float: left; width: 130%;", plotOutput("BOEM4")),
+                    div(style = "float: left; width: 130%;", plotOutput("BOEM5"))
                 )
               )
       ),
