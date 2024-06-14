@@ -3058,7 +3058,7 @@ server <- function(input, output, session) {
       scale_color_manual(values = colsss) +
       scale_alpha_manual(values = alphasss) +
       theme(panel.background = element_rect(fill = "gray27")) +
-      theme(panel.grid = element_blank(), legend.position = "none") # Your logic here
+      theme(panel.grid = element_blank(), legend.position = "none",axis.title = element_blank()) # Your logic here
     output$PC2 <- renderPlot(plot2)
   })
   
